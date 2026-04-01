@@ -497,6 +497,23 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
 @media print{body::after{content:"이 시험은 인쇄할 수 없습니다.";position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:24px;z-index:9999;}.view{display:none!important;}}
 
+/* ══ DETAIL MODAL ══ */
+.detail-stat { background:var(--surface2); border-radius:var(--rs); padding:12px 14px; text-align:center; }
+.detail-stat-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.7px; margin-bottom:4px; }
+.detail-stat-val { font-size:20px; font-weight:700; font-family:"DM Serif Display",serif; }
+.dq-item { background:var(--surface2); border:1px solid var(--border); border-radius:var(--rs); padding:14px 16px; flex-shrink:0; }
+.dq-header { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.dq-icon { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+.dq-num { font-size:12px; color:var(--muted); }
+.dq-score { margin-left:auto; font-size:12px; color:var(--muted); }
+.dq-text { font-size:13px; font-weight:600; margin-bottom:8px; line-height:1.5; }
+.dq-answer-row { display:flex; gap:8px; flex-wrap:wrap; font-size:12px; }
+.dq-mine { background:var(--surface); border:1px solid var(--border); padding:4px 10px; border-radius:20px; color:var(--muted); }
+.dq-mine.correct { border-color:var(--accent); color:var(--accent); background:rgba(212,240,96,.08); }
+.dq-mine.wrong { border-color:var(--accent3); color:var(--accent3); background:rgba(240,96,144,.08); }
+.dq-correct-ans { background:rgba(212,240,96,.06); border:1px solid rgba(212,240,96,.2); padding:4px 10px; border-radius:20px; color:var(--accent); }
+.dq-expl { font-size:11px; color:var(--dim); margin-top:6px; line-height:1.6; padding-top:6px; border-top:1px solid var(--border); }
+
 /* ══ RESULTS LIST ══ */
 .result-list { display:flex; flex-direction:column; gap:10px; }
 .result-list-item {
@@ -575,6 +592,173 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 
 /* 배너가 있을 때 intro/exam/result 카드 상단 패딩 보정 */
 .preview-offset { margin-top: 42px; }
+
+/* ══════════════════════════════════════
+   MOBILE RESPONSIVE
+══════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── 랜딩 ── */
+  .landing-logo { font-size: 48px; }
+  .landing-cards { flex-direction: column; align-items: center; gap: 14px; }
+  .landing-card { width: 90vw; max-width: 360px; }
+
+  /* ── 관리자 레이아웃 — 사이드바 → 하단 탭바 ── */
+  #view-admin { flex-direction: column; }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    flex-direction: row;
+    padding: 0;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: rgba(25,25,25,.97);
+    backdrop-filter: blur(12px);
+  }
+
+  .sb-logo { display: none; }
+  .sb-main-btn { display: none; }
+  .nav-section { display: none; }
+  .sb-footer { display: none; }
+
+  .nav-item {
+    flex-direction: column;
+    gap: 3px;
+    padding: 10px 14px;
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-top: 2px solid transparent;
+    font-size: 10px;
+    min-width: 64px;
+    text-align: center;
+    flex-shrink: 0;
+    justify-content: center;
+  }
+  .nav-item.active {
+    border-left: none;
+    border-top-color: var(--accent);
+    background: rgba(212,240,96,.07);
+  }
+  .nav-icon { font-size: 16px; width: auto; }
+  .type-dot { display: none; }
+
+  /* 메인 영역 — 하단 탭바 높이만큼 패딩 */
+  .main {
+    margin-left: 0;
+    padding: 20px 16px;
+    padding-bottom: 80px;
+  }
+
+  /* 뒤로가기 버튼 — 모바일에서 상단에 표시 */
+  .mobile-top-bar {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(25,25,25,.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 90;
+    height: 52px;
+  }
+  .main { padding-top: 68px; }
+
+  /* ── 통계 카드 ── */
+  .stats { grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .stats-3 { grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .stat { padding: 14px; }
+  .stat-val { font-size: 22px; }
+
+  /* ── 시험 카드 그리드 ── */
+  .exam-grid { grid-template-columns: 1fr; }
+  .ec-actions { opacity: 1; } /* 모바일은 항상 표시 */
+
+  /* ── 페이지 헤더 ── */
+  .ph { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .ph .btn { width: 100%; justify-content: center; }
+
+  /* ── 에디터 탭 ── */
+  .etabs { overflow-x: auto; }
+  .etab { white-space: nowrap; padding: 10px 14px; font-size: 12px; }
+  .two-col { grid-template-columns: 1fr; }
+  .three-col { grid-template-columns: 1fr; }
+
+  /* ── 결과 테이블 ── */
+  .rtable-wrap { font-size: 12px; }
+  .rtable th, .rtable td { padding: 8px 10px; }
+  .rtable th:nth-child(3),
+  .rtable td:nth-child(3) { display: none; } /* 소요시간 숨김 */
+
+  /* ── 결과 목록 ── */
+  .result-list-item { padding: 14px; }
+  .rli-meta { flex-wrap: wrap; gap: 6px; }
+
+  /* ── 진도 그리드 ── */
+  .progress-grid { grid-template-columns: 1fr; }
+
+  /* ── 모달 ── */
+  .modal { width: 95vw !important; padding: 20px; max-height: 85vh; overflow-y: auto; }
+  .modal-footer { flex-direction: column; }
+  .modal-footer .btn, .modal-footer .mbtn { width: 100%; justify-content: center; }
+
+  /* ── 응시자 인트로 ── */
+  .intro-card { padding: 28px 20px; }
+  .intro-meta { grid-template-columns: 1fr 1fr; }
+
+  /* ── 시험 상단바 ── */
+  .topbar { padding: 0 16px; height: 52px; }
+  .tb-logo { font-size: 14px; }
+  .timer { font-size: 14px; padding: 4px 10px; }
+
+  /* ── 시험 문제 카드 ── */
+  .exam-body { padding-top: 72px; padding-bottom: 90px; }
+  .exam-shell { padding: 16px 0; }
+  .q-card { padding: 20px 18px; border-radius: 12px; }
+  .question-text { font-size: 15px; }
+  .opt { padding: 12px 14px; font-size: 13px; }
+
+  /* ── 하단 네비 ── */
+  .exam-footer { padding: 10px 16px; }
+  .footer-dots { max-width: 50%; }
+  .btn-nav { padding: 9px 18px; font-size: 13px; }
+
+  /* ── 결과 화면 ── */
+  .result-card { padding: 28px 20px; }
+  .result-summary { grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .rs-val { font-size: 16px; }
+
+  /* ── 공유 탭 ── */
+  .share-url { font-size: 11px; }
+  .modal-footer { gap: 8px; }
+
+  /* ── 미리보기 배너 ── */
+  .preview-banner { padding: 8px 14px; font-size: 12px; }
+  .preview-banner-left span:not(.preview-banner-dot) { display: none; }
+  .preview-banner-left::after { content: '관리자 미리보기'; color: var(--accent); font-weight: 600; font-size: 12px; }
+  .preview-back-btn { font-size: 11px; padding: 5px 12px; white-space: nowrap; }
+
+}
+
+@media (max-width: 400px) {
+  .landing-logo { font-size: 40px; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .stats-3 { grid-template-columns: repeat(3,1fr); }
+  .stat-val { font-size: 18px; }
+  .btn-nav { padding: 8px 14px; font-size: 12px; }
+}
+
 </style>
 </head>
 <body>
@@ -636,6 +820,11 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
   </nav>
 
   <main class="main">
+  <!-- 모바일 전용 상단바 -->
+  <div class="mobile-top-bar" style="display:none;">
+    <div style="font-family:'DM Serif Display',serif;font-size:17px;">TEST<span style="color:var(--accent)">IFY</span></div>
+    <button onclick="goLanding()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:var(--rs);font-size:12px;font-weight:600;cursor:pointer;font-family:Pretendard,sans-serif;">← 메인</button>
+  </div>
 
     <!-- DASHBOARD -->
     <div id="panel-dashboard" class="panel active">
@@ -938,6 +1127,24 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
     <div class="review-title">문항별 결과</div>
     <div class="answer-list" id="answer-list"></div>
     <div class="result-footer-msg" id="result-footer-msg"></div>
+  </div>
+</div>
+
+<!-- 응시자 상세보기 모달 -->
+<div class="modal-bg" id="detail-modal">
+  <div class="modal" style="width:620px;max-height:85vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div class="modal-title" id="detail-modal-name">김민지 — 상세 결과</div>
+      <button onclick="closeModalById('detail-modal')" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;">×</button>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px;" id="detail-modal-meta">제출 14:23 · 소요 22분</div>
+
+    <!-- 요약 -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;" id="detail-summary"></div>
+
+    <!-- 문항별 결과 -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px;">문항별 결과</div>
+    <div style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px;" id="detail-question-list"></div>
   </div>
 </div>
 
@@ -1374,9 +1581,9 @@ function confirmDelete() {
 
 // ══ SHARE ══
 function updateSharePanel(item) {
-  const code = item.id.toUpperCase().slice(-6);
-  document.getElementById('share-url-exam').textContent  = `testify.sidiz.com/test/${code}`;
-  document.getElementById('share-url-admin').textContent = `testify.sidiz.com/admin/${code}`;
+  const base = 'https://jamie-yum.github.io/TESTIFY/';
+  document.getElementById('share-url-exam').textContent  = `${base}?test=${item.id}`;
+  document.getElementById('share-url-admin').textContent = `${base}?admin=${item.id}`;
   document.getElementById('share-pw-display').textContent = item.pw || '(없음 — 공개)';
   const isLive = item.status==='live';
   document.getElementById('share-status-badge').textContent = isLive?'진행중':'비활성';
@@ -1548,8 +1755,10 @@ function openGrading(name) {
 // 샘플 응시 데이터 (Supabase 연동 전 mock)
 const MOCK_RESPONSES = {
   'i_se2025': [
-    { name:'김민지',  time:'14:23', duration:'22분',  score:90, hasEssay:false, gradingDone:true  },
-    { name:'이준혁',  time:'14:31', duration:'28분',  score:75, hasEssay:false, gradingDone:true  },
+    { name:'김민지',  time:'14:23', duration:'22분',  score:90, hasEssay:false, gradingDone:true,
+      answers:{201:'2',202:'3',203:'2',204:'2',205:'2',206:'3',207:'2',208:'X',209:'2',210:'1',211:'2',212:'1',213:'1',214:'2',215:'2',216:'1',217:'1',218:'2',219:'2',220:'2'} },
+    { name:'이준혁',  time:'14:31', duration:'28분',  score:75, hasEssay:false, gradingDone:true,
+      answers:{201:'0',202:'3',203:'2',204:'2',205:'2',206:'3',207:'1',208:'O',209:'2',210:'1',211:'2',212:'1',213:'1',214:'2',215:'2',216:'1',217:'1',218:'2',219:'2',220:'2'} },
     { name:'박서연',  time:'14:18', duration:'18분',  score:85, hasEssay:false, gradingDone:true  },
     { name:'최동우',  time:'14:45', duration:'⏱ 시간초과', score:60, hasEssay:false, gradingDone:true },
   ],
@@ -1593,6 +1802,94 @@ function renderResultsList() {
       <div class="rli-arrow">→</div>
     </div>`;
   }).join('');
+}
+
+function openResponseDetail(itemId, responseIdx) {
+  const item = items.find(i => i.id === itemId);
+  const responses = MOCK_RESPONSES[itemId] || [];
+  const r = responses[responseIdx];
+  if (!item || !r) return;
+
+  const isSurvey = item.mode === 'survey';
+  const qs = item.questions;
+  const userAnswers = r.answers || {};
+
+  // 헤더
+  document.getElementById('detail-modal-name').textContent = r.name + ' — 상세 결과';
+  document.getElementById('detail-modal-meta').textContent =
+    `제출 ${r.time} · 소요 ${r.duration}` + (r.duration.includes('초과') ? ' (시간 초과)' : '');
+
+  // 요약 통계
+  let correct = 0, wrong = 0, pending = 0;
+  qs.forEach(q => {
+    if (q.type === 'essay') { pending++; return; }
+    if (isSurvey) { pending++; return; }
+    const ua = String(userAnswers[q.id] ?? '');
+    const ans = String(q.answer ?? '');
+    if (q.type === 'ox') {
+      (ua === ans ? correct++ : wrong++);
+    } else if (q.type === 'short') {
+      (ua.toLowerCase().replace(/\s/g,'') === ans.toLowerCase().replace(/\s/g,'') ? correct++ : wrong++);
+    } else {
+      (ua === ans ? correct++ : wrong++);
+    }
+  });
+
+  const totalScore = qs.reduce((a,q) => a + (q.score||0), 0) || 100;
+  document.getElementById('detail-summary').innerHTML = `
+    <div class="detail-stat"><div class="detail-stat-label">점수</div><div class="detail-stat-val" style="color:var(--accent)">${isSurvey ? '—' : r.score + '점'}</div></div>
+    <div class="detail-stat"><div class="detail-stat-label">정답</div><div class="detail-stat-val" style="color:var(--accent)">${isSurvey ? '—' : correct + '개'}</div></div>
+    <div class="detail-stat"><div class="detail-stat-label">오답</div><div class="detail-stat-val" style="color:var(--accent3)">${isSurvey ? '—' : wrong + '개'}</div></div>
+    <div class="detail-stat"><div class="detail-stat-label">채점 대기</div><div class="detail-stat-val" style="color:var(--accent2)">${pending + '개'}</div></div>
+  `;
+
+  // 문항별 결과
+  const typeLabel = {multiple:'객관식', ox:'O/X', short:'단답형', essay:'서술형', scale:'척도'};
+  document.getElementById('detail-question-list').innerHTML = qs.map((q, i) => {
+    const ua = userAnswers[q.id];
+    let isCorrect = null, myAnsText = '미응답', correctAnsText = '';
+
+    if (q.type === 'multiple') {
+      const idx = parseInt(ua);
+      myAnsText = ua !== undefined && q.options ? (q.options[idx] ?? '미응답') : '미응답';
+      correctAnsText = q.options ? q.options[parseInt(q.answer)] : '';
+      isCorrect = !isSurvey ? String(ua) === String(q.answer) : null;
+    } else if (q.type === 'ox') {
+      myAnsText = ua ?? '미응답';
+      correctAnsText = q.answer;
+      isCorrect = !isSurvey ? ua === q.answer : null;
+    } else if (q.type === 'short') {
+      myAnsText = ua ?? '미응답';
+      correctAnsText = q.answer;
+      isCorrect = !isSurvey ? (ua||'').toLowerCase().replace(/\s/g,'') === (q.answer||'').toLowerCase().replace(/\s/g,'') : null;
+    } else if (q.type === 'essay') {
+      myAnsText = ua || '(미작성)';
+      isCorrect = null;
+    } else if (q.type === 'scale') {
+      myAnsText = ua ? ua + '점' : '미응답';
+      isCorrect = null;
+    }
+
+    const iconClass = isCorrect === true ? 'ic-ok' : isCorrect === false ? 'ic-ng' : 'ic-pend';
+    const icon      = isCorrect === true ? '✓'    : isCorrect === false ? '✕'    : '✎';
+    const myClass   = isCorrect === true ? 'correct' : isCorrect === false ? 'wrong' : '';
+
+    return `<div class="dq-item">
+      <div class="dq-header">
+        <div class="dq-icon ${iconClass}">${icon}</div>
+        <span class="dq-num">Q${i+1} · ${typeLabel[q.type]||q.type}</span>
+        ${q.score && !isSurvey ? `<span class="dq-score">${isCorrect===true ? q.score : isCorrect===false ? 0 : '—'}/${q.score}점</span>` : ''}
+      </div>
+      <div class="dq-text">${q.text}</div>
+      <div class="dq-answer-row">
+        <span class="dq-mine ${myClass}">내 답: ${myAnsText}</span>
+        ${isCorrect === false && correctAnsText ? `<span class="dq-correct-ans">정답: ${correctAnsText}</span>` : ''}
+      </div>
+      ${q.explanation && isCorrect === false ? `<div class="dq-expl">💡 ${q.explanation}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  document.getElementById('detail-modal').classList.add('open');
 }
 
 function goToResult(itemId) {
@@ -1649,13 +1946,14 @@ function showResultDetail(itemId) {
             : `<button class="btn btn-xs btn-outline" onclick="openGrading('${r.name}')">채점하기</button>`)
         : '<span style="color:var(--muted);">—</span>';
 
+      const rIdx = responses.indexOf(r);
       return `<tr>
         <td style="font-weight:600;">${r.name}</td>
         <td style="color:var(--muted);">${r.time}</td>
         <td style="color:${r.duration.includes('초과')?'var(--accent3)':'var(--muted)'};">${r.duration}</td>
         <td>${scoreHTML}</td>
         <td>${essayHTML}</td>
-        <td><button class="btn btn-xs btn-outline">상세보기</button></td>
+        <td><button class="btn btn-xs btn-outline" onclick="openResponseDetail('${itemId}',${rIdx})">상세보기</button></td>
       </tr>`;
     }).join('');
   }
@@ -1985,6 +2283,29 @@ function showResult(score,ok,ng,pend,itemList,isSurvey) {
 
 // ══ INIT ══
 renderAll();
+
+// URL 파라미터로 자동 분기
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const testId  = params.get('test');
+  const adminId = params.get('admin');
+
+  if (testId) {
+    // 응시자 링크로 접속한 경우
+    const item = items.find(i => i.id === testId);
+    if (item) {
+      loadIntro(item);
+      showView('intro', false);
+    } else {
+      alert('존재하지 않는 시험입니다.');
+    }
+  } else if (adminId) {
+    // 관리자 링크로 접속한 경우
+    showView('admin', false);
+    renderAll();
+  }
+  // 파라미터 없으면 랜딩 그대로
+})();
 </script>
 </body>
 </html>
