@@ -13,7 +13,14 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23003EFF'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23003EFF'/%3E%3Ctext x='90' y='130' font-family='Georgia,serif' font-size='110' font-weight='bold' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+function openShare(id){
+  editItem(id);
+  setTimeout(()=>{
+    document.querySelector('.etab[data-tab="share"]').click();
+  }, 50);
+}
+</script>
 <script>
   // Supabase SDK를 동적으로 로드 후 초기화
   (function() {
@@ -32,6 +39,13 @@
     };
     document.head.appendChild(script);
   })();
+
+function openShare(id){
+  editItem(id);
+  setTimeout(()=>{
+    document.querySelector('.etab[data-tab="share"]').click();
+  }, 50);
+}
 </script>
 <style>
 :root{
@@ -1544,7 +1558,7 @@ function renderGrid(containerId, list, mode, showAdd) {
 function cardHTML(item) {
   const typeClass = item.mode === 'exam' ? 'type-exam' : 'type-survey';
   const statusClass = {live:'s-live',draft:'s-draft',closed:'s-closed'}[item.status]||'s-draft';
-  return `<div class="exam-card ${typeClass}">
+  return `<div class="exam-card ${typeClass}" onclick="editItem(\'${item.id}\')">
     <div class="ec-header">
       <div class="ec-title">${item.title}</div>
       <select class="status-select ${statusClass}" onchange="changeStatus('${item.id}',this.value,this)" onclick="event.stopPropagation()">
@@ -1558,8 +1572,9 @@ function cardHTML(item) {
       ${item.time ? `<span>⏱ ${item.time}분</span>` : ''}
     </div>
     <div class="ec-actions">
-      <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editItem('${item.id}')">편집</button>
-      <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();previewExaminee('${item.id}')">미리보기</button>
+      
+      <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();previewExaminee('${item.id}')">시험보기</button>
+      <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();openShare('${item.id}')">공유</button>
       <button class="btn btn-xs btn-outline" style="color:var(--accent2);border-color:rgba(96,196,240,.3);" onclick="event.stopPropagation();goToResult('${item.id}')">결과보기</button>
       <button class="btn btn-xs btn-danger" onclick="event.stopPropagation();askDelete('${item.id}')">삭제</button>
     </div>
@@ -2079,9 +2094,8 @@ document.querySelectorAll('.modal-bg').forEach(bg=>{
 // EXAMINEE — PREVIEW
 // ══════════════════════════════════════
 function previewExaminee(id) {
-  const item = items.find(i=>i.id===id);
-  loadIntro(item);
-  showView('intro');
+  const url = `${location.origin}${location.pathname}?test=${id}`;
+  window.open(url, '_blank');
 }
 
 function loadIntro(item) {
@@ -2698,6 +2712,13 @@ renderAll();
   }
   // 파라미터 없으면 랜딩 그대로
 })();
+
+function openShare(id){
+  editItem(id);
+  setTimeout(()=>{
+    document.querySelector('.etab[data-tab="share"]').click();
+  }, 50);
+}
 </script>
 </body>
 </html>
