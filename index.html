@@ -1556,7 +1556,6 @@ function cardHTML(item) {
     <div class="ec-meta">
       <span>📋 ${item.questions.length}문항</span>
       ${item.time ? `<span>⏱ ${item.time}분</span>` : ''}
-      ${item.mode==='exam'&&item.status==='live'?`<span>👤 ${Math.floor(Math.random()*20)+1}명</span>`:''}
     </div>
     <div class="ec-actions">
       <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();editItem('${item.id}')">편집</button>
@@ -1869,23 +1868,28 @@ async function renderResultsList() {
     </div>`;
   }).join('');
 
-  // 응시자 수 비동기로 업데이트
+  // 응시자 수 한 번에 조회
   if (window.sb) {
-    for (const item of allItems) {
-      try {
-        const { count } = await sb.from('responses')
-          .select('*', { count: 'exact', head: true })
-          .eq('exam_id', item.id);
-        const el = document.getElementById(`resp-count-${item.id}`);
-        if (el) el.textContent = `👤 응시자 ${count || 0}명`;
-      } catch(e) {
-        const el = document.getElementById(`resp-count-${item.id}`);
+    try {
+      const { data: counts } = await sb.from('responses')
+        .select('exam_id');
+      const countMap = {};
+      (counts || []).forEach(r => {
+        countMap[r.exam_id] = (countMap[r.exam_id] || 0) + 1;
+      });
+      allItems.forEach(item => {
+        const el = document.getElementById('resp-count-' + item.id);
+        if (el) el.textContent = '👤 응시자 ' + (countMap[item.id] || 0) + '명';
+      });
+    } catch(e) {
+      allItems.forEach(item => {
+        const el = document.getElementById('resp-count-' + item.id);
         if (el) el.textContent = '👤 —';
-      }
+      });
     }
   } else {
     allItems.forEach(item => {
-      const el = document.getElementById(`resp-count-${item.id}`);
+      const el = document.getElementById('resp-count-' + item.id);
       if (el) el.textContent = '👤 —';
     });
   }
@@ -2434,7 +2438,10 @@ async function loadExamsFromDB() {
     }));
 
     save(); // localStorage도 동기화
-    renderAll();
+    if (!window._dbLoaded) {
+      window._dbLoaded = true;
+      renderAll();
+    }
     console.log('✅ DB에서 시험 데이터 로드 완료:', items.length, '개');
   } catch (err) {
     console.warn('DB 로드 실패, 로컬 데이터 사용:', err.message);
