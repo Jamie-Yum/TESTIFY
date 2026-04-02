@@ -13,14 +13,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23003EFF'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23003EFF'/%3E%3Ctext x='90' y='130' font-family='Georgia,serif' font-size='110' font-weight='bold' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
-function openShare(id){
-  editItem(id);
-  setTimeout(()=>{
-    document.querySelector('.etab[data-tab="share"]').click();
-  }, 50);
-}
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
   // Supabase SDK를 동적으로 로드 후 초기화
   (function() {
@@ -31,21 +24,19 @@ function openShare(id){
     script.onload = function() {
       window.sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       console.log('Supabase 연결됨 ✅');
-      // SDK 로드 완료 후 DB 데이터 불러오기
-      if (typeof loadExamsFromDB === 'function') loadExamsFromDB();
+      // SDK 로드 완료 후 DB 데이터 불러오고, 완료 후 URL 파라미터 처리
+      if (typeof loadExamsFromDB === 'function') {
+        loadExamsFromDB().then(() => {
+          if (typeof handleUrlParams === 'function') handleUrlParams();
+        });
+      }
     };
     script.onerror = function() {
       console.warn('Supabase SDK 로드 실패 — 로컬 데이터로 동작합니다');
+      if (typeof handleUrlParams === 'function') handleUrlParams();
     };
     document.head.appendChild(script);
   })();
-
-function openShare(id){
-  editItem(id);
-  setTimeout(()=>{
-    document.querySelector('.etab[data-tab="share"]').click();
-  }, 50);
-}
 </script>
 <style>
 :root{
@@ -1305,6 +1296,8 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 // ══════════════════════════════════════
 // DATA & STATE
 // ══════════════════════════════════════
+// DB에서 로드된 데이터를 로컬에도 동기화
+// 단, 최초 로드 시 localStorage는 임시 fallback으로만 사용
 let items = JSON.parse(localStorage.getItem('testify_v2') || 'null');
 if (!items) {
   items = [
@@ -2079,9 +2072,24 @@ async function showResultDetail(itemId) {
   document.getElementById('results-detail-view').classList.add('active');
 }
 
-function downloadResultExcel() {
-  const data=[['이름','제출시각','소요시간','점수','서술형'],['김민지','14:23','22분',95,'대기'],['이준혁','14:31','28분',88,'완료'],['박서연','14:18','18분',72,'대기'],['최동우','14:45','시간초과',55,'대기']];
-  const ws=XLSX.utils.aoa_to_sheet(data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'결과'); XLSX.writeFile(wb,'시험결과.xlsx');
+async function downloadResultExcel() {
+  if (!currentDetailItemId) return;
+  const item = items.find(i => i.id === currentDetailItemId);
+  if (!item) return;
+  const responses = await loadResponsesFromDB(currentDetailItemId);
+  if (!responses.length) { alert('다운로드할 응시 기록이 없습니다.'); return; }
+  const isSurvey = item.mode === 'survey';
+  const header = ['이름', '시작시각', '제출시각', '소요시간', '점수', '탭이탈횟수'];
+  item.questions.forEach((q, i) => header.push(`Q${i+1}. ${q.text.slice(0,20)}`));
+  const rows = responses.map(r => {
+    const base = [r.name, r.startTime||'—', r.time, r.duration, isSurvey ? '—' : r.score, r.tabWarnings||0];
+    item.questions.forEach(q => base.push(r.answers?.[q.id] ?? '미응답'));
+    return base;
+  });
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '결과');
+  XLSX.writeFile(wb, `${item.title}_결과.xlsx`);
 }
 
 // ══ MODALS ══
@@ -2321,21 +2329,6 @@ function openSubmitModal() {
   document.getElementById('submit-modal').classList.add('open');
 }
 function confirmSubmit() {
-
-  // ===== Supabase 저장 (ADDED) =====
-  try {
-    saveResponseToDB({
-      exam_id: activeItem?.id,
-      name: typeof examineeName !== 'undefined' ? examineeName : '',
-      answers: typeof answers !== 'undefined' ? answers : {},
-      score: typeof finalScore !== 'undefined' ? finalScore : null,
-      created_at: new Date().toISOString()
-    });
-  } catch (e) {
-    console.error('저장 호출 오류:', e);
-  }
-
-
   closeModalById('submit-modal'); clearInterval(timerInterval); examStarted=false;
   doSubmit();
 }
@@ -2364,10 +2357,12 @@ function doSubmit() {
     }
   });
 
-  // DB에 결과 저장
+  // DB에 결과 저장 (프리뷰 모드 제외)
   const durationSecs = Math.round((new Date() - examStartedAt) / 1000);
-  saveResponseToDB(activeItem.id, examineeName, answers, score,
-    examStartedAt.toISOString(), durationSecs, tabWarnCount);
+  if (!isPreviewMode) {
+    saveResponseToDB(activeItem.id, examineeName, answers, score,
+      examStartedAt.toISOString(), durationSecs, tabWarnCount);
+  }
   showResult(score,ok,ng,pend,items2,isSurvey);
 }
 
@@ -2689,9 +2684,10 @@ function clearAllResponses() {
 // ══ INIT ══
 renderAll();
 // loadExamsFromDB는 Supabase SDK 로드 완료 후 자동 실행됨
+// URL 파라미터 처리는 loadExamsFromDB 완료 후 handleUrlParams()로 실행됨
 
-// URL 파라미터로 자동 분기
-(function() {
+// URL 파라미터 처리 함수 (DB 로드 완료 후 호출)
+function handleUrlParams() {
   const params = new URLSearchParams(window.location.search);
   const testId  = params.get('test');
   const adminId = params.get('admin');
@@ -2711,7 +2707,7 @@ renderAll();
     renderAll();
   }
   // 파라미터 없으면 랜딩 그대로
-})();
+}
 
 function openShare(id){
   editItem(id);
