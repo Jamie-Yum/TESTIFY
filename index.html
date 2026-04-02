@@ -28,6 +28,10 @@
       if (typeof loadExamsFromDB === 'function') {
         loadExamsFromDB().then(() => {
           if (typeof handleUrlParams === 'function') handleUrlParams();
+          // 대시보드가 열려 있으면 피드 갱신
+          if (document.getElementById('panel-dashboard')?.classList.contains('active')) {
+            renderDashFeedAndStats();
+          }
         });
       }
     };
@@ -1604,8 +1608,15 @@ function renderAll() {
   document.getElementById('stat-live-cnt').textContent = liveItems.length;
   document.getElementById('stat-total-cnt').textContent = items.length;
 
-  // 오늘 응시 수 & 미채점 — 비동기로 로드
-  renderDashFeedAndStats();
+  // 피드 — items 로드 완료 후에만 실행
+  if (window.sb) {
+    renderDashFeedAndStats();
+  } else {
+    const feedEl = document.getElementById('dash-feed');
+    if (feedEl) feedEl.innerHTML = `<div style="text-align:center;padding:28px;color:var(--muted);font-size:13px;"><div style="font-size:24px;margin-bottom:8px;">📭</div>아직 응시 기록이 없습니다.</div>`;
+    document.getElementById('stat-today-cnt').textContent = '—';
+    document.getElementById('stat-ungraded-cnt').textContent = '—';
+  }
 
   renderGrid('dash-exam-grid',   exams.slice(0,3),   'exam',   true);
   renderGrid('dash-survey-grid', surveys.slice(0,3),  'survey', true);
@@ -1617,31 +1628,22 @@ async function renderDashFeedAndStats() {
   const feed = document.getElementById('dash-feed');
   if (!feed) return;
 
-  let allResponses = [];
-  for (const item of items) {
-    const responses = await loadResponsesFromDB(item.id);
-    responses.forEach(r => allResponses.push({ ...r, itemTitle: item.title, itemMode: item.mode, itemId: item.id }));
-  }
+  // 모든 시험 DB를 병렬로 한 번만 조회
+  const allResponseArrays = await Promise.all(
+    items.map(item => loadResponsesFromDB(item.id).then(rs =>
+      rs.map(r => ({ ...r, itemTitle: item.title, itemMode: item.mode, itemId: item.id, itemQuestions: item.questions }))
+    ))
+  );
+  const allResponses = allResponseArrays.flat();
 
-  // 오늘 응시 수
-  const today = new Date().toDateString();
-  const todayCount = allResponses.filter(r => {
-    if (!r.time) return false;
-    // r.time은 HH:MM 형식 — submitted_at 기준은 캐시 없으므로 근사치로 계산
-    return true; // 오늘 로드된 기록이므로 submitted_at이 오늘인 것만
-  }).length;
-  // submitted_at 기반 오늘 필터는 DB 원본에서만 가능 — 여기선 전체 수 표시
+  // 전체 응시 수
   document.getElementById('stat-today-cnt').textContent = allResponses.length + '건';
 
-  // 미채점 서술형
+  // 미채점 서술형 — 위에서 받은 데이터 재활용
   let ungradedCount = 0;
-  for (const item of items) {
-    if (item.mode !== 'exam') continue;
-    const hasEssay = item.questions?.some(q => q.type === 'essay');
-    if (!hasEssay) continue;
-    const responses = await loadResponsesFromDB(item.id);
-    ungradedCount += responses.filter(r => r.hasEssay && !r.gradingDone).length;
-  }
+  allResponses.forEach(r => {
+    if (r.itemMode === 'exam' && r.hasEssay && !r.gradingDone) ungradedCount++;
+  });
   const ungradedEl = document.getElementById('stat-ungraded-cnt');
   if (ungradedEl) {
     ungradedEl.textContent = ungradedCount;
@@ -2112,6 +2114,8 @@ async function runAiSummary() {
 }
 
 
+// ══ RESULTS ══
+function openGrading(name) {
   document.getElementById('grading-who').textContent=`${name} — Q4. 고객 허리 통증 추천 기능 서술`;
   document.getElementById('grading-modal').classList.add('open');
 }
