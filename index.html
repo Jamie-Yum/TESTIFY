@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TESTIFY — 시디즈 사내 시험 플랫폼</title>
+<meta name="description" content="시디즈 사내 시험 & 설문 플랫폼 — 출제부터 결과 분석까지">
+<meta property="og:title" content="TESTIFY — 시디즈 사내 시험 플랫폼">
+<meta property="og:description" content="출제부터 결과 분석까지, 시디즈 전용 시험 플랫폼">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://jamie-yum.github.io/TESTIFY/og-image.png">
+<meta name="theme-color" content="#003EFF">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23003EFF'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23003EFF'/%3E%3Ctext x='90' y='130' font-family='Georgia,serif' font-size='110' font-weight='bold' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -15,25 +23,28 @@
 </script>
 <style>
 :root{
-  --bg:#0f0f0f;--surface:#191919;--surface2:#222;--surface3:#2a2a2a;
-  --border:#2e2e2e;--border2:#3a3a3a;
-  --accent:#d4f060;--accent2:#60c4f0;--accent3:#f06090;--accent4:#f0a060;
-  --text:#f0ece4;--muted:#888;--dim:#555;
+  --bg:#0f1117;--surface:#1a1d27;--surface2:#222533;--surface3:#2a2f3f;
+  --border:#2e3348;--border2:#3a4060;
+  --accent:#357FFF;--accent2:#94CDEB;--accent3:#f06090;--accent4:#6B8BF6;
+  --text:#f0ece4;--muted:#8899bb;--dim:#4a5270;
   --r:12px;--rs:8px;
 }
 /* 라이트 모드 */
 body.light-mode {
-  --bg:#f5f5f0;--surface:#ffffff;--surface2:#f0f0eb;--surface3:#e8e8e2;
-  --border:#ddddd8;--border2:#ccccC6;
-  --text:#1a1a1a;--muted:#666;--dim:#aaa;
+  --bg:#f0f4ff;--surface:#ffffff;--surface2:#e8eeff;--surface3:#dde5ff;
+  --border:#c8d4f0;--border2:#b0c0e8;
+  --accent:#003EFF;--accent2:#6B8BF6;--accent3:#e0406a;--accent4:#94CDEB;
+  --text:#0a1033;--muted:#445588;--dim:#99aac8;
 }
 body.light-mode .topbar,
 body.light-mode .exam-footer,
-body.light-mode .prog-bar-wrap { background:rgba(245,245,240,.95); }
-body.light-mode .preview-banner { background:rgba(140,180,20,.1); }
-body.light-mode #view-landing::before { background:radial-gradient(circle,rgba(100,150,0,.08) 0%,transparent 65%); }
+body.light-mode .prog-bar-wrap { background:rgba(240,244,255,.96); }
+body.light-mode .preview-banner { background:rgba(0,62,255,.07); border-color:rgba(0,62,255,.2); }
+body.light-mode #view-landing::before { background:radial-gradient(circle,rgba(0,62,255,.07) 0%,transparent 65%); }
 body.light-mode .sidebar { background:var(--surface); }
-body.light-mode .mobile-top-bar { background:rgba(245,245,240,.95); }
+body.light-mode .mobile-top-bar { background:rgba(240,244,255,.96); }
+body.light-mode .landing-card { box-shadow:0 4px 24px rgba(0,62,255,.08); }
+body.light-mode .exam-card:hover { box-shadow:0 8px 24px rgba(0,62,255,.1); }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;}
 
@@ -51,7 +62,7 @@ body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);
 }
 #view-landing::before{
   content:'';position:absolute;width:700px;height:700px;
-  background:radial-gradient(circle,rgba(212,240,96,.07) 0%,transparent 65%);
+  background:radial-gradient(circle,rgba(53,127,255,.07) 0%,transparent 65%);
   top:-200px;left:-100px;pointer-events:none;
 }
 #view-landing::after{
@@ -122,7 +133,7 @@ body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);
   color:var(--muted);cursor:pointer;border-radius:var(--rs);transition:all .15s;font-size:13.5px;font-weight:500;
 }
 .nav-item:hover{color:var(--text);background:var(--surface2);}
-.nav-item.active{color:var(--accent);background:rgba(212,240,96,.08);}
+.nav-item.active{color:var(--accent);background:rgba(53,127,255,.08);}
 .nav-icon{width:16px;text-align:center;font-size:13px;}
 
 /* 시험 / 설문 구분 뱃지 */
@@ -137,15 +148,15 @@ body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);
   display:flex;align-items:center;gap:8px;
   margin:14px 12px 0;
   padding:9px 14px;
-  background:rgba(212,240,96,.07);
-  border:1px solid rgba(212,240,96,.18);
+  background:rgba(53,127,255,.07);
+  border:1px solid rgba(53,127,255,.18);
   border-radius:var(--rs);
   color:var(--accent);
   font-size:13px;font-weight:600;
   cursor:pointer;transition:all .15s;
   font-family:'Pretendard',sans-serif;
 }
-.sb-main-btn:hover{background:rgba(212,240,96,.14);border-color:rgba(212,240,96,.35);}
+.sb-main-btn:hover{background:rgba(53,127,255,.14);border-color:rgba(53,127,255,.35);}
 .sb-main-btn-icon{font-size:11px;}
 
 /* ══ PANELS ══ */
@@ -160,8 +171,8 @@ body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);
 /* ══ BUTTONS ══ */
 .btn{padding:10px 20px;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;
   font-family:'Pretendard',sans-serif;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
-.btn-accent{background:var(--accent);color:#111;}
-.btn-accent:hover{background:#c8e050;}
+.btn-accent{background:var(--accent);color:#fff;}
+.btn-accent:hover{background:#2b6fe0;}
 .btn-blue{background:var(--accent2);color:#111;}
 .btn-blue:hover{background:#4ab8e8;}
 .btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted);}
@@ -214,13 +225,13 @@ body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:8px;cursor:pointer;transition:all .2s;min-height:110px;color:var(--muted);font-size:13px;
 }
-.add-card:hover{border-color:var(--accent);color:var(--accent);background:rgba(212,240,96,.03);}
+.add-card:hover{border-color:var(--accent);color:var(--accent);background:rgba(53,127,255,.03);}
 .add-card.survey-add:hover{border-color:var(--accent2);color:var(--accent2);background:rgba(96,196,240,.03);}
 
 /* ══ BADGES ══ */
 .badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
 .badge-live{background:rgba(240,96,144,.15);color:var(--accent3);}
-.badge-exam{background:rgba(212,240,96,.12);color:var(--accent);}
+.badge-exam{background:rgba(53,127,255,.12);color:var(--accent);}
 .badge-survey{background:rgba(96,196,240,.12);color:var(--accent2);}
 .badge-draft{background:rgba(255,255,255,.06);color:var(--muted);}
 .badge-closed{background:rgba(255,255,255,.04);color:var(--dim);}
@@ -252,13 +263,13 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .tgl-desc{font-size:12px;color:var(--muted);margin-top:2px;}
 .tgl{width:38px;height:21px;background:var(--border);border-radius:11px;cursor:pointer;position:relative;transition:background .2s;border:none;flex-shrink:0;}
 .tgl::after{content:'';position:absolute;width:15px;height:15px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .2s;}
-.tgl.on{background:var(--accent);}
+.tgl.on{background:var(--accent);} .tgl.on::after{background:#fff;}
 .tgl.on::after{transform:translateX(17px);}
 .tgl.on.survey-tgl{background:var(--accent2);}
 
 .mode-row{display:flex;gap:10px;}
 .mode-btn{flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--rs);background:transparent;color:var(--muted);cursor:pointer;font-size:13px;font-family:'Pretendard',sans-serif;font-weight:500;transition:all .15s;text-align:center;line-height:1.5;}
-.mode-btn.sel-exam{border-color:var(--accent);color:var(--accent);background:rgba(212,240,96,.07);}
+.mode-btn.sel-exam{border-color:var(--accent);color:var(--accent);background:rgba(53,127,255,.07);}
 .mode-btn.sel-survey{border-color:var(--accent2);color:var(--accent2);background:rgba(96,196,240,.07);}
 
 /* ══ QUESTION EDITOR ══ */
@@ -279,7 +290,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .options-editor{display:flex;flex-direction:column;gap:8px;margin-top:10px;}
 .opt-row{display:flex;align-items:center;gap:8px;}
 .opt-label{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);flex-shrink:0;cursor:pointer;transition:all .15s;}
-.opt-label.correct{border-color:var(--accent);color:var(--accent);background:rgba(212,240,96,.1);}
+.opt-label.correct{border-color:var(--accent);color:var(--accent);background:rgba(53,127,255,.1);}
 
 .add-q-bar{display:flex;gap:8px;flex-wrap:wrap;}
 .add-q-btn{padding:8px 14px;border:1px dashed var(--border);border-radius:var(--rs);background:transparent;color:var(--muted);cursor:pointer;font-size:12px;font-family:'Pretendard',sans-serif;transition:all .15s;}
@@ -288,7 +299,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 
 /* ══ EXCEL ══ */
 .drop-zone{border:2px dashed var(--border);border-radius:var(--r);padding:32px;text-align:center;cursor:pointer;transition:all .2s;color:var(--muted);}
-.drop-zone:hover,.drop-zone.over{border-color:var(--accent);color:var(--accent);background:rgba(212,240,96,.03);}
+.drop-zone:hover,.drop-zone.over{border-color:var(--accent);color:var(--accent);background:rgba(53,127,255,.03);}
 .drop-icon{font-size:28px;margin-bottom:8px;}
 .preview-table-wrap{overflow-x:auto;margin-top:16px;border-radius:var(--rs);border:1px solid var(--border);}
 .preview-table{width:100%;border-collapse:collapse;font-size:12px;}
@@ -308,7 +319,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .rtable tr:last-child td{border-bottom:none;}
 .rtable tr:hover td{background:var(--surface2);}
 .spill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;}
-.sp-hi{background:rgba(212,240,96,.15);color:var(--accent);}
+.sp-hi{background:rgba(53,127,255,.15);color:var(--accent);}
 .sp-mid{background:rgba(96,196,240,.15);color:var(--accent2);}
 .sp-lo{background:rgba(240,96,144,.15);color:var(--accent3);}
 .sp-pend{background:rgba(240,160,96,.12);color:var(--accent4);}
@@ -322,7 +333,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .pc-meta{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;}
 
 /* ══ NOTICE / UTIL ══ */
-.notice{background:rgba(212,240,96,.05);border:1px solid rgba(212,240,96,.15);border-radius:var(--rs);padding:12px 16px;font-size:13px;color:var(--muted);line-height:1.7;}
+.notice{background:rgba(53,127,255,.05);border:1px solid rgba(53,127,255,.15);border-radius:var(--rs);padding:12px 16px;font-size:13px;color:var(--muted);line-height:1.7;}
 .notice strong{color:var(--text);}
 .notice.survey-notice{background:rgba(96,196,240,.05);border-color:rgba(96,196,240,.15);}
 .sec-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px;}
@@ -337,7 +348,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 ══════════════════════════════════════ */
 #view-intro{background:var(--bg);position:relative;overflow:hidden;}
 #view-intro::before{content:'';position:absolute;width:500px;height:500px;
-  background:radial-gradient(circle,rgba(212,240,96,.06) 0%,transparent 70%);
+  background:radial-gradient(circle,rgba(53,127,255,.06) 0%,transparent 70%);
   top:-80px;right:-80px;pointer-events:none;}
 
 .intro-card{width:520px;max-width:95vw;background:var(--surface);border:1px solid var(--border);
@@ -347,7 +358,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .platform-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;}
 .platform-dot.survey{background:var(--accent2);}
 .mode-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
-  color:var(--accent);background:rgba(212,240,96,.1);padding:4px 12px;border-radius:20px;margin-bottom:14px;}
+  color:var(--accent);background:rgba(53,127,255,.1);padding:4px 12px;border-radius:20px;margin-bottom:14px;}
 .mode-tag.survey{color:var(--accent2);background:rgba(96,196,240,.1);}
 .intro-title{font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:10px;letter-spacing:-.5px;line-height:1.3;}
 .intro-desc{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:22px;}
@@ -356,7 +367,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .im-val{font-size:15px;font-weight:600;}
 .im-val.accent{color:var(--accent);}
 .im-val.blue{color:var(--accent2);}
-.intro-notice{background:rgba(212,240,96,.05);border:1px solid rgba(212,240,96,.15);border-radius:var(--rs);padding:13px 16px;font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:22px;}
+.intro-notice{background:rgba(53,127,255,.05);border:1px solid rgba(53,127,255,.15);border-radius:var(--rs);padding:13px 16px;font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:22px;}
 .intro-notice.survey-notice{background:rgba(96,196,240,.05);border-color:rgba(96,196,240,.15);}
 .intro-notice strong{color:var(--text);}
 .intro-fi{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 14px;color:var(--text);font-size:14px;font-family:'Pretendard',sans-serif;outline:none;transition:border-color .15s;}
@@ -365,8 +376,8 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .intro-fi::placeholder{color:var(--dim);}
 .err{color:var(--accent3);font-size:12px;margin-top:6px;display:none;}
 .err.show{display:block;}
-.btn-start{width:100%;background:var(--accent);color:#111;border:none;padding:14px;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Pretendard',sans-serif;}
-.btn-start:hover{background:#c8e050;transform:translateY(-1px);}
+.btn-start{width:100%;background:var(--accent);color:#fff;border:none;padding:14px;border-radius:var(--rs);font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Pretendard',sans-serif;}
+.btn-start:hover{background:#2b6fe0;transform:translateY(-1px);}
 .btn-start.survey-start{background:var(--accent2);}
 .btn-start.survey-start:hover{background:#4ab8e8;}
 
@@ -380,7 +391,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .tb-logo span.survey{color:var(--accent2);}
 .tb-center{font-size:13px;color:var(--muted);}
 .tb-center strong{color:var(--text);}
-.timer{font-size:16px;font-weight:700;font-family:'DM Serif Display',serif;color:var(--accent);background:rgba(212,240,96,.08);padding:5px 14px;border-radius:var(--rs);letter-spacing:2px;transition:all .3s;}
+.timer{font-size:16px;font-weight:700;font-family:'DM Serif Display',serif;color:var(--accent);background:rgba(53,127,255,.08);padding:5px 14px;border-radius:var(--rs);letter-spacing:2px;transition:all .3s;}
 .timer.warn{color:var(--accent3);background:rgba(240,96,144,.1);animation:pulse 1s infinite;}
 .timer.notime{opacity:0;pointer-events:none;}
 
@@ -393,7 +404,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 
 .q-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;animation:fadeUp .3s ease;}
 .q-header{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
-.q-num-badge{width:30px;height:30px;background:var(--accent);color:#111;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;}
+.q-num-badge{width:30px;height:30px;background:var(--accent);color:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;}
 .q-num-badge.survey{background:var(--accent2);}
 .q-type-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;}
 .q-score-lbl{margin-left:auto;font-size:12px;color:var(--muted);background:var(--surface2);padding:3px 10px;border-radius:20px;}
@@ -402,16 +413,16 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .opts{display:flex;flex-direction:column;gap:10px;}
 .opt{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;font-size:14px;font-family:'Pretendard',sans-serif;color:var(--text);text-align:left;transition:all .15s;width:100%;user-select:none;-webkit-user-select:none;}
 .opt:hover{border-color:#555;background:#252525;}
-.opt.sel{border-color:var(--accent);background:rgba(212,240,96,.07);}
+.opt.sel{border-color:var(--accent);background:rgba(53,127,255,.07);}
 .opt.sel.survey{border-color:var(--accent2);background:rgba(96,196,240,.07);}
 .opt-n{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;color:var(--muted);transition:all .15s;}
-.opt.sel .opt-n{background:var(--accent);color:#111;border-color:var(--accent);}
+.opt.sel .opt-n{background:var(--accent);color:#fff;border-color:var(--accent);}
 .opt.sel.survey .opt-n{background:var(--accent2);border-color:var(--accent2);}
 
 .ox-wrap{display:flex;gap:12px;}
 .ox-btn{flex:1;padding:24px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface2);color:var(--muted);font-size:36px;cursor:pointer;text-align:center;transition:all .15s;line-height:1;user-select:none;}
 .ox-btn:hover{border-color:#555;color:var(--text);}
-.ox-btn.o{border-color:var(--accent);background:rgba(212,240,96,.07);color:var(--accent);}
+.ox-btn.o{border-color:var(--accent);background:rgba(53,127,255,.07);color:var(--accent);}
 .ox-btn.x{border-color:var(--accent3);background:rgba(240,96,144,.07);color:var(--accent3);}
 
 .short-inp{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rs);padding:13px 16px;color:var(--text);font-size:15px;font-family:'Pretendard',sans-serif;outline:none;transition:border-color .15s;}
@@ -439,7 +450,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--border);transition:all .2s;cursor:pointer;}
 .dot.answered{background:var(--accent);}
 .dot.answered.survey{background:var(--accent2);}
-.dot.current{background:var(--accent);outline:2px solid rgba(212,240,96,.35);outline-offset:1px;}
+.dot.current{background:var(--accent);outline:2px solid rgba(53,127,255,.35);outline-offset:1px;}
 .dot.current.survey{background:var(--accent2);outline-color:rgba(96,196,240,.35);}
 .dot.warn-dot{background:var(--accent3);}
 
@@ -447,8 +458,8 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .btn-nav{padding:10px 22px;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer;font-family:'Pretendard',sans-serif;transition:all .15s;border:none;}
 .btn-prev{background:var(--surface2);border:1px solid var(--border);color:var(--muted);}
 .btn-prev:hover{color:var(--text);}
-.btn-next-exam{background:var(--accent);color:#111;}
-.btn-next-exam:hover{background:#c8e050;}
+.btn-next-exam{background:var(--accent);color:#fff;}
+.btn-next-exam:hover{background:#2b6fe0;}
 .btn-next-survey{background:var(--accent2);color:#111;}
 .btn-next-survey:hover{background:#4ab8e8;}
 .btn-submit-btn{background:var(--accent3);color:#fff;}
@@ -458,7 +469,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
    RESULT
 ══════════════════════════════════════ */
 #view-result{background:var(--bg);position:relative;overflow:hidden;}
-#view-result::before{content:'';position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(212,240,96,.05) 0%,transparent 70%);top:-200px;left:50%;transform:translateX(-50%);pointer-events:none;}
+#view-result::before{content:'';position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(53,127,255,.05) 0%,transparent 70%);top:-200px;left:50%;transform:translateX(-50%);pointer-events:none;}
 #view-result.survey-result::before{background:radial-gradient(circle,rgba(96,196,240,.05) 0%,transparent 70%);}
 
 .result-card{width:560px;max-width:95vw;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px;position:relative;z-index:1;animation:fadeUp .5s ease;}
@@ -478,7 +489,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .answer-list{display:flex;flex-direction:column;gap:8px;}
 .ans-item{display:flex;align-items:flex-start;gap:12px;padding:13px 14px;background:var(--surface2);border-radius:var(--rs);border:1px solid var(--border);}
 .ans-icon{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;}
-.ic-ok{background:rgba(212,240,96,.18);color:var(--accent);}
+.ic-ok{background:rgba(53,127,255,.18);color:var(--accent);}
 .ic-ng{background:rgba(240,96,144,.18);color:var(--accent3);}
 .ic-pend{background:rgba(96,196,240,.18);color:var(--accent2);}
 .ic-sub{background:rgba(255,255,255,.07);color:var(--muted);}
@@ -501,7 +512,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .mbtn-cancel:hover{color:var(--text);}
 .mbtn-confirm{background:var(--accent3);color:#fff;}
 .mbtn-confirm:hover{background:#e0507a;}
-.ai-box{background:rgba(212,240,96,.05);border:1px solid rgba(212,240,96,.18);border-radius:var(--rs);padding:14px;margin-bottom:14px;}
+.ai-box{background:rgba(53,127,255,.05);border:1px solid rgba(53,127,255,.18);border-radius:var(--rs);padding:14px;margin-bottom:14px;}
 .ai-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--accent);margin-bottom:8px;}
 .warn-modal{background:var(--surface);border:1px solid rgba(240,96,144,.3);border-radius:14px;padding:28px;width:400px;max-width:95vw;animation:fadeUp .25s ease;text-align:center;}
 .warn-count{display:inline-block;background:rgba(240,96,144,.15);color:var(--accent3);font-size:24px;font-weight:700;font-family:'DM Serif Display',serif;padding:8px 20px;border-radius:var(--rs);margin:8px 0 16px;}
@@ -522,9 +533,9 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .dq-text { font-size:13px; font-weight:600; margin-bottom:8px; line-height:1.5; }
 .dq-answer-row { display:flex; gap:8px; flex-wrap:wrap; font-size:12px; }
 .dq-mine { background:var(--surface); border:1px solid var(--border); padding:4px 10px; border-radius:20px; color:var(--muted); }
-.dq-mine.correct { border-color:var(--accent); color:var(--accent); background:rgba(212,240,96,.08); }
+.dq-mine.correct { border-color:var(--accent); color:var(--accent); background:rgba(53,127,255,.08); }
 .dq-mine.wrong { border-color:var(--accent3); color:var(--accent3); background:rgba(240,96,144,.08); }
-.dq-correct-ans { background:rgba(212,240,96,.06); border:1px solid rgba(212,240,96,.2); padding:4px 10px; border-radius:20px; color:var(--accent); }
+.dq-correct-ans { background:rgba(53,127,255,.06); border:1px solid rgba(53,127,255,.2); padding:4px 10px; border-radius:20px; color:var(--accent); }
 .dq-expl { font-size:11px; color:var(--dim); margin-top:6px; line-height:1.6; padding-top:6px; border-top:1px solid var(--border); }
 
 /* ══ RESULTS LIST ══ */
@@ -541,7 +552,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
   display:flex; align-items:center; justify-content:center;
   font-size:16px; flex-shrink:0;
 }
-.rli-type.exam  { background:rgba(212,240,96,.1); }
+.rli-type.exam  { background:rgba(53,127,255,.1); }
 .rli-type.survey{ background:rgba(96,196,240,.1); }
 .result-list-item .rli-body { flex:1; }
 .rli-title { font-size:14px; font-weight:600; margin-bottom:4px; }
@@ -609,8 +620,8 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 9999;
-  background: rgba(212,240,96,.12);
-  border-bottom: 1px solid rgba(212,240,96,.3);
+  background: rgba(53,127,255,.12);
+  border-bottom: 1px solid rgba(53,127,255,.3);
   padding: 9px 20px;
   align-items: center;
   justify-content: space-between;
@@ -628,13 +639,13 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
   animation: blink 1.4s infinite;
 }
 .preview-back-btn {
-  background: var(--accent); color: #111; border: none;
+  background: var(--accent); color: #fff; border: none;
   padding: 6px 16px; border-radius: 6px;
   font-size: 12px; font-weight: 700;
   cursor: pointer; font-family: Pretendard, sans-serif;
   transition: background .15s;
 }
-.preview-back-btn:hover { background: #c8e050; }
+.preview-back-btn:hover { background: #2b6fe0; }
 @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
 
 /* 배너가 있을 때 intro/exam/result 카드 상단 패딩 보정 */
@@ -694,7 +705,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
   .nav-item.active {
     border-left: none;
     border-top-color: var(--accent);
-    background: rgba(212,240,96,.07);
+    background: rgba(53,127,255,.07);
   }
   .nav-icon { font-size: 16px; width: auto; }
   .type-dot { display: none; }
@@ -1164,7 +1175,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
       <div class="score-ring">
         <svg width="130" height="130" viewBox="0 0 130 130">
           <circle cx="65" cy="65" r="56" fill="none" stroke="#2e2e2e" stroke-width="8"/>
-          <circle cx="65" cy="65" r="56" fill="none" stroke="#d4f060" stroke-width="8"
+          <circle cx="65" cy="65" r="56" fill="none" stroke="#357FFF" stroke-width="8"
             id="score-circle" stroke-dasharray="351.9" stroke-dashoffset="351.9"
             stroke-linecap="round" style="transition:stroke-dashoffset 1.2s ease"/>
         </svg>
@@ -1623,6 +1634,7 @@ function saveItem(draft) {
   save();
   updateSharePanel(item);
   document.getElementById('editor-title').textContent = item.title;
+  saveItemToDB(item); // DB 저장
   alert(draft ? '임시저장 완료!' : '배포 완료! 링크를 공유하세요.');
 }
 
@@ -1633,6 +1645,7 @@ function askDelete(id) {
   document.getElementById('delete-modal').classList.add('open');
 }
 function confirmDelete() {
+  deleteItemFromDB(deleteTargetId); // DB 삭제
   items = items.filter(i=>i.id!==deleteTargetId);
   save(); closeModalById('delete-modal'); renderAll();
 }
@@ -1961,12 +1974,14 @@ function showResultsList() {
   document.getElementById('results-detail-view').classList.remove('active');
 }
 
-function showResultDetail(itemId) {
+async function showResultDetail(itemId) {
   currentDetailItemId = itemId;
   const item = items.find(i => i.id === itemId);
   if (!item) return;
 
-  const responses = MOCK_RESPONSES[itemId] || [];
+  // DB에서 실제 응시 결과 불러오기
+  let responses = await loadResponsesFromDB(itemId);
+  if (responses.length === 0) responses = MOCK_RESPONSES[itemId] || []; // fallback
   const isSurvey = item.mode === 'survey';
 
   // 헤더
@@ -2139,6 +2154,7 @@ function startExam() {
   renderQ();
   if (activeItem.time > 0) startTimer();
   examStarted = true;
+  window._examStartedAt = new Date(); // 시작 시간 기록
   if (isPreviewMode) showPreviewBanner(true);
 }
 
@@ -2276,6 +2292,7 @@ function doSubmit() {
   const isSurvey=activeItem.mode==='survey';
   let score=0,ok=0,ng=0,pend=0;
   const items2=[];
+  const examStartedAt = window._examStartedAt || new Date();
 
   activeItem.questions.forEach(q=>{
     if(isSurvey||q.type==='scale'||q.type==='essay') {
@@ -2295,6 +2312,10 @@ function doSubmit() {
     }
   });
 
+  // DB에 결과 저장
+  const durationSecs = Math.round((new Date() - examStartedAt) / 1000);
+  saveResponseToDB(activeItem.id, examineeName, answers, score,
+    examStartedAt.toISOString(), durationSecs, tabWarnCount);
   showResult(score,ok,ng,pend,items2,isSurvey);
 }
 
@@ -2344,6 +2365,216 @@ function showResult(score,ok,ng,pend,itemList,isSurvey) {
     : (pend>0?'서술형 문항은 관리자 채점 후 최종 점수가 업데이트됩니다.':'');
 }
 
+// ══════════════════════════════════════
+// SUPABASE 연동
+// ══════════════════════════════════════
+
+// ── 관리자: 시험 목록 로드 ──
+async function loadExamsFromDB() {
+  try {
+    const { data: examsData, error: e1 } = await sb.from('exams').select('*').order('created_at', { ascending: false });
+    if (e1) { console.warn('exams load error:', e1.message); return; }
+
+    const { data: questionsData, error: e2 } = await sb.from('questions').select('*').order('sort_order');
+    if (e2) { console.warn('questions load error:', e2.message); return; }
+
+    if (!examsData || examsData.length === 0) {
+      // DB가 비어있으면 현재 로컬 데이터를 DB에 저장
+      await syncLocalToDB();
+      return;
+    }
+
+    // DB 데이터를 로컬 items 포맷으로 변환
+    items = examsData.map(e => ({
+      id: e.id,
+      mode: e.mode,
+      title: e.title,
+      pw: e.pw || '',
+      desc: e.description || '',
+      time: e.time_limit || 0,
+      random: e.random_count || 0,
+      showResult: e.show_result,
+      retake: e.retake,
+      shuffleOpts: e.shuffle_options,
+      shuffleQ: e.shuffle_questions,
+      status: e.status,
+      questions: questionsData
+        .filter(q => q.exam_id === e.id)
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map(q => ({
+          id: q.id,
+          type: q.type,
+          text: q.text,
+          options: q.options || undefined,
+          answer: q.answer || '',
+          modelAnswer: q.model_answer || '',
+          score: q.score || 10,
+          explanation: q.explanation || '',
+        }))
+    }));
+
+    save(); // localStorage도 동기화
+    renderAll();
+    console.log('✅ DB에서 시험 데이터 로드 완료:', items.length, '개');
+  } catch (err) {
+    console.warn('DB 로드 실패, 로컬 데이터 사용:', err.message);
+  }
+}
+
+// ── 로컬 데이터를 DB에 저장 (최초 1회) ──
+async function syncLocalToDB() {
+  try {
+    for (const item of items) {
+      await sb.from('exams').upsert({
+        id: item.id,
+        mode: item.mode,
+        title: item.title,
+        pw: item.pw || null,
+        description: item.desc || null,
+        time_limit: item.time,
+        random_count: item.random,
+        show_result: item.showResult,
+        retake: item.retake,
+        shuffle_options: item.shuffleOpts,
+        shuffle_questions: item.shuffleQ,
+        status: item.status,
+      });
+
+      for (let i = 0; i < item.questions.length; i++) {
+        const q = item.questions[i];
+        await sb.from('questions').upsert({
+          exam_id: item.id,
+          sort_order: i,
+          type: q.type,
+          text: q.text,
+          options: q.options || null,
+          answer: q.answer || null,
+          model_answer: q.modelAnswer || null,
+          score: q.score || 10,
+          explanation: q.explanation || null,
+        });
+      }
+    }
+    console.log('✅ 로컬 데이터 DB 동기화 완료');
+  } catch (err) {
+    console.warn('DB 동기화 실패:', err.message);
+  }
+}
+
+// ── 시험 저장 (DB + 로컬) ──
+async function saveItemToDB(item) {
+  try {
+    await sb.from('exams').upsert({
+      id: item.id,
+      mode: item.mode,
+      title: item.title,
+      pw: item.pw || null,
+      description: item.desc || null,
+      time_limit: item.time,
+      random_count: item.random,
+      show_result: item.showResult,
+      retake: item.retake,
+      shuffle_options: item.shuffleOpts,
+      shuffle_questions: item.shuffleQ,
+      status: item.status,
+    });
+
+    // 기존 문항 삭제 후 재저장
+    await sb.from('questions').delete().eq('exam_id', item.id);
+    for (let i = 0; i < item.questions.length; i++) {
+      const q = item.questions[i];
+      await sb.from('questions').insert({
+        exam_id: item.id,
+        sort_order: i,
+        type: q.type,
+        text: q.text,
+        options: q.options || null,
+        answer: q.answer || null,
+        model_answer: q.modelAnswer || null,
+        score: q.score || 10,
+        explanation: q.explanation || null,
+      });
+    }
+    console.log('✅ 시험 저장 완료:', item.title);
+  } catch (err) {
+    console.warn('DB 저장 실패:', err.message);
+  }
+}
+
+// ── 시험 삭제 (DB) ──
+async function deleteItemFromDB(itemId) {
+  try {
+    await sb.from('exams').delete().eq('id', itemId);
+    console.log('✅ DB 삭제 완료:', itemId);
+  } catch (err) {
+    console.warn('DB 삭제 실패:', err.message);
+  }
+}
+
+// ── 응시 결과 저장 ──
+async function saveResponseToDB(examId, name, answers, score, startTime, durationSecs, tabWarnings) {
+  try {
+    const { error } = await sb.from('responses').insert({
+      exam_id: examId,
+      examinee_name: name,
+      answers: answers,
+      score: score,
+      start_time: startTime,
+      submitted_at: new Date().toISOString(),
+      duration_seconds: durationSecs,
+      tab_warnings: tabWarnings,
+    });
+    if (error) console.warn('결과 저장 오류:', error.message);
+    else console.log('✅ 응시 결과 저장 완료:', name);
+  } catch (err) {
+    console.warn('결과 저장 실패:', err.message);
+  }
+}
+
+// ── 결과 불러오기 ──
+async function loadResponsesFromDB(examId) {
+  try {
+    const { data, error } = await sb.from('responses')
+      .select('*')
+      .eq('exam_id', examId)
+      .order('submitted_at', { ascending: true });
+    if (error) { console.warn('결과 로드 오류:', error.message); return []; }
+    return (data || []).map(r => {
+      const start = r.start_time ? new Date(r.start_time) : null;
+      const end = r.submitted_at ? new Date(r.submitted_at) : null;
+      const durSecs = r.duration_seconds || (start && end ? Math.round((end-start)/1000) : 0);
+      const durMin = Math.floor(durSecs / 60);
+      const exam = items.find(i => i.id === examId);
+      const hasEssay = exam?.questions?.some(q => q.type === 'essay') || false;
+      return {
+        name: r.examinee_name,
+        startTime: start ? start.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) : '—',
+        time: end ? end.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) : '—',
+        duration: r.duration_seconds >= (exam?.time||30)*60 ? '⏱ 시간초과' : durMin + '분',
+        score: r.score || 0,
+        hasEssay,
+        gradingDone: false,
+        answers: r.answers || {},
+        tabWarnings: r.tab_warnings || 0,
+        id: r.id,
+      };
+    });
+  } catch (err) {
+    console.warn('결과 로드 실패:', err.message);
+    return [];
+  }
+}
+
+// ── 결과 삭제 ──
+async function deleteResponseFromDB(responseId) {
+  try {
+    await sb.from('responses').delete().eq('id', responseId);
+    console.log('✅ 응시 기록 삭제:', responseId);
+  } catch (err) {
+    console.warn('응시 기록 삭제 실패:', err.message);
+  }
+}
+
 // ══ 테마 토글 ══
 function toggleTheme() {
   const isLight = document.body.classList.toggle('light-mode');
@@ -2366,6 +2597,7 @@ function changeStatus(itemId, newStatus, selectEl) {
   if (!item) return;
   item.status = newStatus;
   save();
+  saveItemToDB(item); // DB 동기화
   // select 색상 업데이트
   selectEl.className = 'status-select ' + ({live:'s-live',draft:'s-draft',closed:'s-closed'}[newStatus]||'s-draft');
   renderAll();
@@ -2374,12 +2606,16 @@ function changeStatus(itemId, newStatus, selectEl) {
 // ══ 응시 기록 삭제 ══
 let currentDetailItemId = null;
 
-function deleteResponse(itemId, idx) {
+async function deleteResponse(itemId, idx) {
   if (!confirm('이 응시 기록을 삭제할까요?')) return;
-  if (MOCK_RESPONSES[itemId]) {
+  // DB에서 불러온 결과면 DB 삭제
+  const dbResponses = await loadResponsesFromDB(itemId);
+  if (dbResponses[idx]?.id) {
+    await deleteResponseFromDB(dbResponses[idx].id);
+  } else if (MOCK_RESPONSES[itemId]) {
     MOCK_RESPONSES[itemId].splice(idx, 1);
-    showResultDetail(itemId); // 새로고침
   }
+  showResultDetail(itemId);
 }
 
 function clearAllResponses() {
@@ -2392,6 +2628,7 @@ function clearAllResponses() {
 
 // ══ INIT ══
 renderAll();
+loadExamsFromDB(); // DB에서 최신 데이터 로드
 
 // URL 파라미터로 자동 분기
 (function() {
