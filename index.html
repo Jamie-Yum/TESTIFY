@@ -2924,10 +2924,10 @@ function renderQ() {
       <button class="ox-btn ${sel==='X'?'x':''}" onclick="selectOX(this,'X')">✕</button>
     </div>`;
   } else if (q.type==='short') {
-    inputHTML=`<input class="short-inp ${isSurvey?'survey':''}" type="text" placeholder="답을 입력하세요" value="${answers[q.id]||''}" oninput="answers[${q.id}]=this.value;updateDots()"/>`;
+    inputHTML=`<input class="short-inp ${isSurvey?'survey':''}" type="text" placeholder="답을 입력하세요" value="${answers[String(q.id)]||''}" oninput="answers['${q.id}']=this.value;updateDots()"/>`;
   } else if (q.type==='essay') {
-    const val=answers[q.id]||'';
-    inputHTML=`<textarea class="essay-area ${isSurvey?'survey':''}" id="essay-${q.id}" placeholder="자유롭게 서술하세요…" oninput="answers[${q.id}]=this.value;updateDots();updateCnt(${q.id})">${val}</textarea><div class="essay-cnt" id="cnt-${q.id}">${val.length}자</div>`;
+    const val=answers[String(q.id)]||'';
+    inputHTML=`<textarea class="essay-area ${isSurvey?'survey':''}" id="essay-${q.id}" placeholder="자유롭게 서술하세요…" oninput="answers['${q.id}']=this.value;updateDots();updateCnt(${q.id})">${val}</textarea><div class="essay-cnt" id="cnt-${q.id}">${val.length}자</div>`;
   } else if (q.type==='scale') {
     const sel=answers[q.id];
     inputHTML=`<div class="scale-wrap">
@@ -3045,16 +3045,16 @@ function selectOpt(el,origIdx) {
   el.querySelector('.opt-n').style.background  = isSurvey?'var(--accent2)':'var(--accent)';
   el.querySelector('.opt-n').style.borderColor = isSurvey?'var(--accent2)':'var(--accent)';
   el.querySelector('.opt-n').style.color = '#fff';
-  answers[activeItem.questions[currentQ].id]=origIdx; updateDots();
+  answers[String(activeItem.questions[currentQ].id)] = origIdx; updateDots();
 }
 function selectOX(el,val) {
   el.parentElement.querySelectorAll('.ox-btn').forEach(b=>b.className='ox-btn');
   el.classList.add(val==='O'?'o':'x');
-  answers[activeItem.questions[currentQ].id]=val; updateDots();
+  answers[String(activeItem.questions[currentQ].id)]=val; updateDots();
 }
 function selectScale(el,n,qid) {
   el.parentElement.querySelectorAll('.scale-btn').forEach(b=>b.classList.remove('sel'));
-  el.classList.add('sel'); answers[qid]=n; updateDots();
+  el.classList.add('sel'); answers[String(qid)]=n; updateDots();
 }
 
 function nextQ() { if(currentQ<activeItem.questions.length-1){currentQ++;renderQ();} }
@@ -3099,20 +3099,22 @@ function doSubmit() {
   const examStartedAt = window._examStartedAt || new Date();
 
   activeItem.questions.forEach(q=>{
+    const qid = String(q.id);
+    const ans = answers[qid] !== undefined ? answers[qid] : answers[q.id];
     if(isSurvey||q.type==='scale'||q.type==='essay') {
-      pend++; items2.push({q:q.text,ok:null,mine:String(answers[q.id]||'(미작성)'),type:q.type});
+      pend++; items2.push({q:q.text,ok:null,mine:String(ans??'(미작성)'),type:q.type});
     } else if(q.type==='multiple') {
-      const correct=String(answers[q.id])===String(q.answer);
+      const correct=String(ans)===String(q.answer);
       if(correct){score+=q.score;ok++;}else ng++;
-      items2.push({q:q.text,ok:correct,mine:q.options[answers[q.id]]??'미응답',right:q.options[parseInt(q.answer)],type:q.type,expl:q.explanation});
+      items2.push({q:q.text,ok:correct,mine:q.options[ans]??'미응답',right:q.options[parseInt(q.answer)],type:q.type,expl:q.explanation});
     } else if(q.type==='ox') {
-      const correct=answers[q.id]===q.answer;
+      const correct=ans===q.answer;
       if(correct){score+=q.score;ok++;}else ng++;
-      items2.push({q:q.text,ok:correct,mine:answers[q.id]??'미응답',right:q.answer,type:q.type});
+      items2.push({q:q.text,ok:correct,mine:ans??'미응답',right:q.answer,type:q.type});
     } else if(q.type==='short') {
-      const correct=(answers[q.id]||'').toLowerCase().replace(/\s/g,'')===q.answer.toLowerCase().replace(/\s/g,'');
+      const correct=(ans||'').toLowerCase().replace(/\s/g,'')===q.answer.toLowerCase().replace(/\s/g,'');
       if(correct){score+=q.score;ok++;}else ng++;
-      items2.push({q:q.text,ok:correct,mine:answers[q.id]??'미응답',right:q.answer,type:q.type});
+      items2.push({q:q.text,ok:correct,mine:ans??'미응답',right:q.answer,type:q.type});
     }
   });
 
