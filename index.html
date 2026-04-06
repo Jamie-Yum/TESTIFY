@@ -14,6 +14,7 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23003EFF'/%3E%3Ctext x='90' y='130' font-family='Georgia,serif' font-size='110' font-weight='bold' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   // Supabase SDK를 동적으로 로드 후 초기화
   (function() {
@@ -1155,13 +1156,19 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
               </div>
             </div>
             <div class="share-url" id="share-url-exam">testify.sidiz.com/test/——</div>
-            <button class="btn btn-sm btn-accent" onclick="copyShareUrl('exam')">링크 복사</button>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <button class="btn btn-sm btn-accent" onclick="copyShareUrl('exam')">링크 복사</button>
+              <button class="btn btn-sm btn-outline" onclick="showQR('exam')">QR 코드</button>
+            </div>
           </div>
           <div class="share-card">
             <div style="font-weight:600;margin-bottom:4px;">관리자 전용 링크</div>
             <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">이 URL을 아는 사람만 관리할 수 있습니다</div>
             <div class="share-url" id="share-url-admin">testify.sidiz.com/admin/——</div>
-            <button class="btn btn-sm btn-outline" onclick="copyShareUrl('admin')">링크 복사</button>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <button class="btn btn-sm btn-outline" onclick="copyShareUrl('admin')">링크 복사</button>
+              <button class="btn btn-sm btn-outline" onclick="showQR('admin')">QR 코드</button>
+            </div>
           </div>
           <div class="notice"><strong>응시 비밀번호</strong>: <span id="share-pw-display" style="font-family:monospace;font-size:15px;">——</span><br><span style="font-size:12px;">설정하지 않으면 링크만으로 입장 가능합니다.</span></div>
         </div>
@@ -1388,6 +1395,23 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModalById('grading-modal')">취소</button>
       <button class="btn btn-accent" onclick="confirmGrading()">채점 완료</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="qr-modal">
+  <div class="modal" style="width:340px;text-align:center;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div class="modal-title" id="qr-modal-title">QR 코드</div>
+      <button onclick="closeModalById('qr-modal')" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;">×</button>
+    </div>
+    <div id="qr-canvas-wrap" style="display:flex;justify-content:center;margin-bottom:16px;">
+      <div id="qr-canvas" style="background:#fff;padding:16px;border-radius:var(--rs);display:inline-block;"></div>
+    </div>
+    <div id="qr-url-text" style="font-size:11px;color:var(--muted);word-break:break-all;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModalById('qr-modal')">닫기</button>
+      <button class="btn btn-accent" style="flex:1;" onclick="downloadQR()">이미지 저장</button>
     </div>
   </div>
 </div>
@@ -1991,6 +2015,42 @@ function updateShareStatus() {
 function copyShareUrl(type) {
   const text = document.getElementById(`share-url-${type}`).textContent;
   navigator.clipboard.writeText(text).then(()=>alert('링크가 복사되었습니다!'));
+}
+
+function showQR(type) {
+  const url = document.getElementById(`share-url-${type}`).textContent;
+  const title = type === 'exam' ? '응시자 링크 QR' : '관리자 링크 QR';
+  document.getElementById('qr-modal-title').textContent = title;
+  document.getElementById('qr-url-text').textContent = url;
+
+  // QR 초기화
+  const wrap = document.getElementById('qr-canvas');
+  wrap.innerHTML = '';
+  new QRCode(wrap, {
+    text: url,
+    width: 200,
+    height: 200,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+  document.getElementById('qr-modal').classList.add('open');
+}
+
+function downloadQR() {
+  const canvas = document.querySelector('#qr-canvas canvas');
+  const img = document.querySelector('#qr-canvas img');
+  if (canvas) {
+    const a = document.createElement('a');
+    a.download = 'testify-qr.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  } else if (img) {
+    const a = document.createElement('a');
+    a.download = 'testify-qr.png';
+    a.href = img.src;
+    a.click();
+  }
 }
 
 // ══ EDITOR TABS ══
@@ -3460,11 +3520,13 @@ let currentDetailItemId = null;
 
 async function deleteResponse(itemId, idx) {
   if (!confirm('이 응시 기록을 삭제할까요?')) return;
-  // DB에서 불러온 결과면 DB 삭제
   const dbResponses = await loadResponsesFromDB(itemId);
   if (dbResponses[idx]?.id) {
     await deleteResponseFromDB(dbResponses[idx].id);
   }
+  // 캐시 초기화 + 피드 갱신
+  if (window._cachedResponses) delete window._cachedResponses[itemId];
+  if (window.sb) renderDashFeedAndStats();
   showResultDetail(itemId);
 }
 
@@ -3472,8 +3534,18 @@ function clearAllResponses() {
   if (!currentDetailItemId) return;
   const item = items.find(i => i.id === currentDetailItemId);
   if (!confirm(`"${item?.title}" 의 모든 응시 기록을 삭제할까요? 복구할 수 없습니다.`)) return;
-  if (window._cachedResponses) window._cachedResponses[currentDetailItemId] = [];
-  showResultDetail(currentDetailItemId);
+  // DB에서 전체 삭제
+  if (window.sb) {
+    sb.from('sidiz_responses').delete().eq('exam_id', currentDetailItemId)
+      .then(() => {
+        if (window._cachedResponses) delete window._cachedResponses[currentDetailItemId];
+        renderDashFeedAndStats();
+        showResultDetail(currentDetailItemId);
+      });
+  } else {
+    if (window._cachedResponses) window._cachedResponses[currentDetailItemId] = [];
+    showResultDetail(currentDetailItemId);
+  }
 }
 
 // ══ INIT ══
