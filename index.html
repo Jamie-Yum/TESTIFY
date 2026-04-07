@@ -1100,11 +1100,14 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
     <!-- EDITOR -->
     <div id="panel-editor" class="panel">
       <div class="ph">
-        <div>
-          <div class="ph-title" id="editor-title">새로 만들기</div>
-          <div class="ph-sub" id="editor-sub">설정을 입력하세요</div>
+        <div style="flex:1;">
+          <input id="editor-title-input" class="fi" style="font-size:20px;font-weight:700;letter-spacing:-.5px;background:transparent;border-color:transparent;padding:4px 8px;width:100%;max-width:480px;" placeholder="제목을 입력하세요" oninput="onEditorTitleInput(this.value)" />
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="mode-btn" id="mode-exam-btn" onclick="setEditorMode('exam')" style="padding:6px 16px;font-size:12px;flex:none;width:auto;">📝 시험</button>
+            <button class="mode-btn" id="mode-survey-btn" onclick="setEditorMode('survey')" style="padding:6px 16px;font-size:12px;flex:none;width:auto;">📊 설문</button>
+          </div>
         </div>
-        <div class="flex gap-10">
+        <div class="flex gap-10" style="align-self:flex-start;">
           <button class="btn btn-outline" onclick="saveItem(true)">임시저장</button>
           <button class="btn btn-accent" id="btn-deploy" onclick="saveItem(false)">저장 & 배포</button>
         </div>
@@ -1119,22 +1122,12 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
       <!-- 기본 설정 -->
       <div id="tab-basic" class="tcontent active">
         <div style="max-width:580px;">
-          <div class="fg">
-            <label class="fl">유형</label>
-            <div class="mode-row">
-              <button class="mode-btn" id="mode-exam-btn" onclick="setEditorMode('exam')">📝 시험 모드<br><small style="opacity:.6;font-size:11px;">정답·채점 있음</small></button>
-              <button class="mode-btn" id="mode-survey-btn" onclick="setEditorMode('survey')">📊 설문 모드<br><small style="opacity:.6;font-size:11px;">자유 응답 수집</small></button>
-            </div>
-          </div>
           <div class="two-col">
-            <div class="fg"><label class="fl">제목</label><input class="fi" id="f-title" placeholder="예: 2월 제품 교육 평가" /></div>
             <div class="fg"><label class="fl">응시 비밀번호 (없으면 공개)</label><input class="fi" id="f-pw" placeholder="예: SIDIZ25" /></div>
+            <div class="fg"><label class="fl">시간 제한 (분, 0=무제한)</label><input class="fi" id="f-time" type="number" value="30" /></div>
           </div>
           <div class="fg"><label class="fl">안내 문구</label><textarea class="fi" id="f-desc" placeholder="응시자에게 보여줄 안내 문구"></textarea></div>
-          <div class="two-col">
-            <div class="fg"><label class="fl">시간 제한 (분, 0=무제한)</label><input class="fi" id="f-time" type="number" value="30" /></div>
-            <div class="fg"><label class="fl">랜덤 출제 문항 수 (0=전체)</label><input class="fi" id="f-random" type="number" value="0" /></div>
-          </div>
+          <div class="fg"><label class="fl">랜덤 출제 문항 수 (0=전체)</label><input class="fi" id="f-random" type="number" value="0" /></div>
           <div class="toggle-row"><div><div class="tgl-label">결과 즉시 공개</div><div class="tgl-desc">제출 후 응시자에게 점수와 정오표 표시</div></div><button class="tgl on" id="tgl-result" onclick="this.classList.toggle('on')"></button></div>
           <div class="toggle-row"><div><div class="tgl-label">재시험 허용</div><div class="tgl-desc">동일 링크로 재응시 가능</div></div><button class="tgl" id="tgl-retake" onclick="this.classList.toggle('on')"></button></div>
           <div class="toggle-row" id="tgl-row-shuffle"><div><div class="tgl-label">보기 순서 랜덤</div><div class="tgl-desc">객관식 보기를 응시자마다 다르게 섞기</div></div><button class="tgl on" id="tgl-shuffle" onclick="this.classList.toggle('on')"></button></div>
@@ -1976,15 +1969,19 @@ function editItem(id) {
   currentId = id;
   const item = items.find(i => i.id === id);
   nav('editor');
-  document.getElementById('editor-title').textContent = item.title;
-  document.getElementById('editor-sub').textContent = item.mode==='exam' ? '시험 편집' : '설문 편집';
-  // 유형에 따라 배포 버튼 색상
+  document.getElementById('editor-title-input').value = item.title;
   document.getElementById('btn-deploy').className = item.mode==='exam' ? 'btn btn-accent' : 'btn btn-blue';
   loadEditorFields(item);
 }
 
+function onEditorTitleInput(val) {
+  const item = getCurrent(); if(!item) return;
+  item.title = val || '제목 없음';
+  save();
+}
+
 function loadEditorFields(item) {
-  document.getElementById('f-title').value = item.title;
+  document.getElementById('editor-title-input').value = item.title;
   document.getElementById('f-pw').value = item.pw;
   document.getElementById('f-desc').value = item.desc;
   document.getElementById('f-time').value = item.time;
@@ -2005,6 +2002,7 @@ function setEditorMode(mode) {
   if (item) { item.mode = mode; save(); }
   document.getElementById('mode-exam-btn').className   = 'mode-btn' + (mode==='exam'?' sel-exam':'');
   document.getElementById('mode-survey-btn').className = 'mode-btn' + (mode==='survey'?' sel-survey':'');
+  document.getElementById('btn-deploy').className = mode==='exam' ? 'btn btn-accent' : 'btn btn-blue';
   // 설문 전용 버튼들
   const surveyOnlyBtns = ['btn-add-scale','btn-add-checkbox','btn-add-dropdown','btn-add-linear','btn-add-star','btn-add-grid','btn-add-checkgrid','btn-add-date','btn-add-time','btn-add-file'];
   surveyOnlyBtns.forEach(id => {
@@ -2022,7 +2020,7 @@ function getCurrent() { return items.find(i=>i.id===currentId); }
 function saveItem(draft) {
   const item = getCurrent();
   if (!item) return;
-  item.title = document.getElementById('f-title').value || '제목 없음';
+  item.title = document.getElementById('editor-title-input').value || '제목 없음';
   item.pw    = document.getElementById('f-pw').value;
   item.desc  = document.getElementById('f-desc').value;
   item.time  = parseInt(document.getElementById('f-time').value)||0;
@@ -2039,7 +2037,6 @@ function saveItem(draft) {
   item.thankMsg = document.getElementById('f-thank-msg').value.trim();
   save();
   updateSharePanel(item);
-  document.getElementById('editor-title').textContent = item.title;
   saveItemToDB(item);
   alert(draft ? '임시저장 완료!' : '배포 완료! 링크를 공유하세요.');
 }
@@ -2131,6 +2128,32 @@ function renderQList(qs, mode) {
   list.innerHTML = qs.map((q,i)=>qItemHTML(q,i,mode)).join('');
   list.querySelectorAll('.q-item-header').forEach(h=>{
     h.addEventListener('click',()=>h.parentElement.classList.toggle('open'));
+  });
+  // 문항 드래그앤드롭
+  let dragSrcQId = null;
+  list.querySelectorAll('.q-item').forEach(el => {
+    el.setAttribute('draggable','true');
+    el.querySelector('.q-drag').style.cursor = 'grab';
+    el.addEventListener('dragstart', e => {
+      dragSrcQId = el.dataset.qid || el.id.replace('qi-','');
+      el.style.opacity = '.4';
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('dragend', () => { el.style.opacity = ''; });
+    el.addEventListener('dragover', e => { e.preventDefault(); el.style.background='var(--surface2)'; });
+    el.addEventListener('dragleave', () => { el.style.background=''; });
+    el.addEventListener('drop', e => {
+      e.preventDefault(); el.style.background='';
+      const tgtId = el.id.replace('qi-','');
+      if (!dragSrcQId || dragSrcQId === tgtId) return;
+      const item = getCurrent();
+      const srcIdx = item.questions.findIndex(q=>String(q.id)===String(dragSrcQId));
+      const tgtIdx = item.questions.findIndex(q=>String(q.id)===String(tgtId));
+      if (srcIdx===-1||tgtIdx===-1) return;
+      const [moved] = item.questions.splice(srcIdx,1);
+      item.questions.splice(tgtIdx,0,moved);
+      save(); renderQList(item.questions,item.mode);
+    });
   });
 }
 
@@ -3010,8 +3033,9 @@ function loadIntro(item) {
   const notice = document.getElementById('intro-notice');
   notice.className = 'intro-notice' + (isSurvey?' survey-notice':'');
   notice.innerHTML = isSurvey
-    ? '<strong>안내</strong><br>솔직한 의견을 자유롭게 작성해주세요. 익명으로 처리됩니다.'
+    ? ''
     : '<strong>주의사항</strong><br>시험 시작 후 다른 탭으로 이동 시 자동으로 기록됩니다. 시간 초과 시 즉시 제출됩니다.';
+  notice.style.display = isSurvey ? 'none' : '';
 
   document.getElementById('pw-group').style.display = item.pw ? '' : 'none';
   const startBtn = document.getElementById('btn-start');
@@ -3857,8 +3881,13 @@ function clearAllResponses() {
   }
 }
 
-// ══ INIT ══
-renderAll();
+// URL 파라미터 있으면 랜딩 즉시 숨김 (깜빡임 방지)
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('test') || params.get('admin')) {
+    document.getElementById('view-landing').style.display = 'none';
+  }
+})();
 // loadExamsFromDB는 Supabase SDK 로드 완료 후 자동 실행됨
 // URL 파라미터 처리는 loadExamsFromDB 완료 후 handleUrlParams()로 실행됨
 
