@@ -553,7 +553,53 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 
 .rtab-content { animation: fadeUp .25s ease; }
 
-/* ══ 검토 페이지 ══ */
+/* ══ 새 문항 유형 ══ */
+/* 체크박스 */
+.check-opts{display:flex;flex-direction:column;gap:10px;}
+.check-opt{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;font-size:14px;font-family:'Pretendard',sans-serif;color:var(--text);transition:all .15s;width:100%;user-select:none;}
+.check-opt:hover{border-color:var(--accent2);background:rgba(96,196,240,.05);}
+.check-opt.sel{border-color:var(--accent2);background:rgba(96,196,240,.07);}
+.check-box{width:20px;height:20px;border-radius:4px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;transition:all .15s;}
+.check-opt.sel .check-box{background:var(--accent2);border-color:var(--accent2);color:#fff;}
+
+/* 드롭다운 */
+.dropdown-sel{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rs);padding:12px 16px;color:var(--text);font-size:14px;font-family:'Pretendard',sans-serif;outline:none;cursor:pointer;transition:border-color .15s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;}
+.dropdown-sel:focus{border-color:var(--accent2);}
+
+/* 날짜/시간 */
+.date-inp{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rs);padding:12px 16px;color:var(--text);font-size:14px;font-family:'Pretendard',sans-serif;outline:none;transition:border-color .15s;}
+.date-inp:focus{border-color:var(--accent2);}
+.date-inp::-webkit-calendar-picker-indicator{filter:invert(.6);}
+
+/* 등급(별점) */
+.star-wrap{display:flex;gap:8px;align-items:center;}
+.star-btn{font-size:32px;cursor:pointer;color:var(--border2);transition:all .15s;background:none;border:none;padding:0;line-height:1;}
+.star-btn.sel{color:#f5c518;}
+.star-btn:hover{transform:scale(1.15);}
+
+/* 선형 배율 */
+.linear-wrap{display:flex;flex-direction:column;gap:10px;}
+.linear-btns{display:flex;gap:4px;justify-content:space-between;}
+.linear-btn{flex:1;padding:10px 4px;border:1.5px solid var(--border);border-radius:var(--rs);background:var(--surface2);color:var(--muted);cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;font-family:'Pretendard',sans-serif;text-align:center;}
+.linear-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+.linear-btn.sel{border-color:var(--accent2);background:rgba(96,196,240,.1);color:var(--accent2);}
+.linear-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);}
+
+/* 그리드 */
+.grid-table{width:100%;border-collapse:collapse;font-size:13px;}
+.grid-table th{background:var(--surface2);padding:8px 12px;text-align:center;font-weight:600;color:var(--muted);border:1px solid var(--border);}
+.grid-table td{padding:8px 12px;border:1px solid var(--border);text-align:center;}
+.grid-table tr:hover td{background:rgba(96,196,240,.03);}
+.grid-radio{width:18px;height:18px;cursor:pointer;accent-color:var(--accent2);}
+.grid-check{width:18px;height:18px;cursor:pointer;accent-color:var(--accent2);}
+
+/* 파일 업로드 */
+.file-upload-zone{border:2px dashed var(--border);border-radius:var(--rs);padding:28px;text-align:center;cursor:pointer;transition:all .2s;color:var(--muted);}
+.file-upload-zone:hover{border-color:var(--accent2);color:var(--accent2);background:rgba(96,196,240,.03);}
+.file-upload-zone.has-file{border-color:var(--accent2);background:rgba(96,196,240,.05);}
+.file-preview{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;background:var(--surface2);border-radius:var(--rs);font-size:13px;}
+.file-preview-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.file-preview-remove{background:none;border:none;color:var(--accent3);cursor:pointer;font-size:16px;flex-shrink:0;}
 .review-page { display:none; animation:fadeUp .3s ease; }
 .review-page.active { display:block; }
 .review-page-header { background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 28px;margin-bottom:16px; }
@@ -1117,7 +1163,16 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
           <button class="add-q-btn" onclick="addQ('ox')">＋ OX</button>
           <button class="add-q-btn" onclick="addQ('short')">＋ 단답형</button>
           <button class="add-q-btn" onclick="addQ('essay')">＋ 서술형</button>
-          <button class="add-q-btn survey-btn" id="btn-add-scale" onclick="addQ('scale')" style="display:none;">＋ 척도 (1~5)</button>
+          <button class="add-q-btn survey-btn" id="btn-add-scale" onclick="addQ('scale')" style="display:none;">＋ 척도</button>
+          <button class="add-q-btn survey-btn" id="btn-add-checkbox" onclick="addQ('checkbox')" style="display:none;">＋ 체크박스</button>
+          <button class="add-q-btn survey-btn" id="btn-add-dropdown" onclick="addQ('dropdown')" style="display:none;">＋ 드롭다운</button>
+          <button class="add-q-btn survey-btn" id="btn-add-linear" onclick="addQ('linear')" style="display:none;">＋ 선형 배율</button>
+          <button class="add-q-btn survey-btn" id="btn-add-star" onclick="addQ('star')" style="display:none;">＋ 등급(별점)</button>
+          <button class="add-q-btn survey-btn" id="btn-add-grid" onclick="addQ('grid')" style="display:none;">＋ 객관식 그리드</button>
+          <button class="add-q-btn survey-btn" id="btn-add-checkgrid" onclick="addQ('checkgrid')" style="display:none;">＋ 체크박스 그리드</button>
+          <button class="add-q-btn survey-btn" id="btn-add-date" onclick="addQ('date')" style="display:none;">＋ 날짜</button>
+          <button class="add-q-btn survey-btn" id="btn-add-time" onclick="addQ('time')" style="display:none;">＋ 시간</button>
+          <button class="add-q-btn survey-btn" id="btn-add-file" onclick="addQ('file')" style="display:none;">＋ 파일 업로드</button>
         </div>
       </div>
 
@@ -1950,8 +2005,12 @@ function setEditorMode(mode) {
   if (item) { item.mode = mode; save(); }
   document.getElementById('mode-exam-btn').className   = 'mode-btn' + (mode==='exam'?' sel-exam':'');
   document.getElementById('mode-survey-btn').className = 'mode-btn' + (mode==='survey'?' sel-survey':'');
-  // 척도 버튼 표시
-  document.getElementById('btn-add-scale').style.display = mode==='survey'?'':'none';
+  // 설문 전용 버튼들
+  const surveyOnlyBtns = ['btn-add-scale','btn-add-checkbox','btn-add-dropdown','btn-add-linear','btn-add-star','btn-add-grid','btn-add-checkgrid','btn-add-date','btn-add-time','btn-add-file'];
+  surveyOnlyBtns.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = mode==='survey' ? '' : 'none';
+  });
   // 채점 관련 토글 시각적 구분
   document.getElementById('tgl-row-shuffle').style.display = mode==='exam'?'':'none';
   // 설문 전용 — 감사 메시지
@@ -2076,33 +2135,99 @@ function renderQList(qs, mode) {
 }
 
 function qItemHTML(q, i, mode) {
-  const typeLabel = {multiple:'객관식',ox:'OX',short:'단답형',essay:'서술형',scale:'척도 (1~5)'}[q.type];
+  const typeLabel = {
+    multiple:'객관식', ox:'OX', short:'단답형', essay:'서술형', scale:'척도',
+    checkbox:'체크박스', dropdown:'드롭다운', linear:'선형 배율', star:'등급(별점)',
+    grid:'객관식 그리드', checkgrid:'체크박스 그리드', date:'날짜', time:'시간', file:'파일 업로드'
+  }[q.type] || q.type;
+
   let body = `<div class="fg"><label class="fl">문제</label><textarea class="fi" rows="2" onchange="updateQ('${q.id}','text',this.value)">${q.text||''}</textarea></div>`;
 
   if (q.type==='multiple') {
-    body += `<div class="fg"><label class="fl">보기 (번호 클릭 = 정답)</label><div class="options-editor">`+
+    body += `<div class="fg"><label class="fl">보기${mode==='exam'?' (번호 클릭 = 정답)':''}</label><div class="options-editor">` +
       (q.options||['','','','']).map((o,oi)=>
         `<div class="opt-row">
-          <div class="opt-label ${String(q.answer)===String(oi)?'correct':''}" onclick="setAnswer('${q.id}',${oi},this)">${oi+1}</div>
+          ${mode==='exam' ? `<div class="opt-label ${String(q.answer)===String(oi)?'correct':''}" onclick="setAnswer('${q.id}',${oi},this)">${oi+1}</div>` : `<div class="opt-label">${oi+1}</div>`}
           <input class="fi" value="${o}" placeholder="보기 ${oi+1}" onchange="updateOpt('${q.id}',${oi},this.value)"/>
         </div>`
-      ).join('')+`</div></div>`;
+      ).join('') + `</div>
+      <button class="add-q-btn" style="margin-top:8px;" onclick="addOption('${q.id}')">＋ 보기 추가</button></div>`;
     if (mode==='exam') body+=`<div class="fg"><label class="fl">해설 (선택)</label><input class="fi" value="${q.explanation||''}" onchange="updateQ('${q.id}','explanation',this.value)"/></div>`;
+
+  } else if (q.type==='checkbox') {
+    body += `<div class="fg"><label class="fl">보기 (복수 선택 가능)</label><div class="options-editor">` +
+      (q.options||['','']).map((o,oi)=>
+        `<div class="opt-row">
+          <div class="opt-label" style="border-radius:4px;">☐</div>
+          <input class="fi" value="${o}" placeholder="보기 ${oi+1}" onchange="updateOpt('${q.id}',${oi},this.value)"/>
+        </div>`
+      ).join('') + `</div>
+      <button class="add-q-btn" style="margin-top:8px;" onclick="addOption('${q.id}')">＋ 보기 추가</button></div>`;
+
+  } else if (q.type==='dropdown') {
+    body += `<div class="fg"><label class="fl">선택지</label><div class="options-editor">` +
+      (q.options||['','']).map((o,oi)=>
+        `<div class="opt-row">
+          <div class="opt-label">${oi+1}</div>
+          <input class="fi" value="${o}" placeholder="선택지 ${oi+1}" onchange="updateOpt('${q.id}',${oi},this.value)"/>
+        </div>`
+      ).join('') + `</div>
+      <button class="add-q-btn" style="margin-top:8px;" onclick="addOption('${q.id}')">＋ 선택지 추가</button></div>`;
+
   } else if (q.type==='ox') {
-    body+=`<div class="fg"><label class="fl">정답</label><div class="flex gap-10">
-      <button class="mode-btn ${q.answer==='O'?'sel-exam':''}" style="max-width:80px;" onclick="updateQ('${q.id}','answer','O');reRenderQ()">O</button>
-      <button class="mode-btn ${q.answer==='X'?'sel-exam':''}" style="max-width:80px;" onclick="updateQ('${q.id}','answer','X');reRenderQ()">X</button>
-    </div></div>`;
+    if (mode==='exam') {
+      body+=`<div class="fg"><label class="fl">정답</label><div class="flex gap-10">
+        <button class="mode-btn ${q.answer==='O'?'sel-exam':''}" style="max-width:80px;" onclick="updateQ('${q.id}','answer','O');reRenderQ()">O</button>
+        <button class="mode-btn ${q.answer==='X'?'sel-exam':''}" style="max-width:80px;" onclick="updateQ('${q.id}','answer','X');reRenderQ()">X</button>
+      </div></div>`;
+    }
+
   } else if (q.type==='short') {
-    body+=`<div class="fg"><label class="fl">정답</label><input class="fi" value="${q.answer||''}" onchange="updateQ('${q.id}','answer',this.value)"/></div>`;
+    if (mode==='exam') body+=`<div class="fg"><label class="fl">정답</label><input class="fi" value="${q.answer||''}" onchange="updateQ('${q.id}','answer',this.value)"/></div>`;
+
   } else if (q.type==='essay') {
-    body+=`<div class="fg"><label class="fl">모범 답안 (AI 채점 기준)</label><textarea class="fi" rows="3" onchange="updateQ('${q.id}','modelAnswer',this.value)">${q.modelAnswer||''}</textarea></div>`;
+    if (mode==='exam') body+=`<div class="fg"><label class="fl">모범 답안 (AI 채점 기준)</label><textarea class="fi" rows="3" onchange="updateQ('${q.id}','modelAnswer',this.value)">${q.modelAnswer||''}</textarea></div>`;
+
   } else if (q.type==='scale') {
-    body+=`<div class="fg"><label class="fl">척도 라벨 (좌측)</label><input class="fi" value="${q.scaleMin||'전혀 아니다'}" onchange="updateQ('${q.id}','scaleMin',this.value)"/></div>
-    <div class="fg"><label class="fl">척도 라벨 (우측)</label><input class="fi" value="${q.scaleMax||'매우 그렇다'}" onchange="updateQ('${q.id}','scaleMax',this.value)"/></div>`;
+    body+=`<div class="two-col">
+      <div class="fg"><label class="fl">좌측 라벨</label><input class="fi" value="${q.scaleMin||'전혀 아니다'}" onchange="updateQ('${q.id}','scaleMin',this.value)"/></div>
+      <div class="fg"><label class="fl">우측 라벨</label><input class="fi" value="${q.scaleMax||'매우 그렇다'}" onchange="updateQ('${q.id}','scaleMax',this.value)"/></div>
+    </div>`;
+
+  } else if (q.type==='linear') {
+    body+=`<div class="two-col">
+      <div class="fg"><label class="fl">최솟값</label><select class="fi" onchange="updateQ('${q.id}','linearMin',+this.value)">${[0,1].map(v=>`<option value="${v}" ${(q.linearMin??1)===v?'selected':''}>${v}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">최댓값</label><select class="fi" onchange="updateQ('${q.id}','linearMax',+this.value)">${[2,3,4,5,6,7,8,9,10].map(v=>`<option value="${v}" ${(q.linearMax??5)===v?'selected':''}>${v}</option>`).join('')}</select></div>
+    </div>
+    <div class="two-col">
+      <div class="fg"><label class="fl">좌측 라벨</label><input class="fi" value="${q.scaleMin||''}" placeholder="예: 매우 불만족" onchange="updateQ('${q.id}','scaleMin',this.value)"/></div>
+      <div class="fg"><label class="fl">우측 라벨</label><input class="fi" value="${q.scaleMax||''}" placeholder="예: 매우 만족" onchange="updateQ('${q.id}','scaleMax',this.value)"/></div>
+    </div>`;
+
+  } else if (q.type==='star') {
+    body+=`<div class="fg"><label class="fl">최대 별점</label><select class="fi fi-inline" style="width:80px;" onchange="updateQ('${q.id}','starMax',+this.value)">${[3,4,5,6,7,8,9,10].map(v=>`<option value="${v}" ${(q.starMax||5)===v?'selected':''}>${v}★</option>`).join('')}</select></div>`;
+
+  } else if (q.type==='grid' || q.type==='checkgrid') {
+    body+=`<div class="two-col">
+      <div class="fg"><label class="fl">행 (질문)</label>
+        ${(q.rows||['행 1']).map((r,ri)=>`<input class="fi" style="margin-bottom:6px;" value="${r}" placeholder="행 ${ri+1}" onchange="updateGridRow('${q.id}',${ri},this.value)"/>`).join('')}
+        <button class="add-q-btn" style="margin-top:4px;" onclick="addGridRow('${q.id}')">＋ 행 추가</button>
+      </div>
+      <div class="fg"><label class="fl">열 (선택지)</label>
+        ${(q.cols||['열 1']).map((c,ci)=>`<input class="fi" style="margin-bottom:6px;" value="${c}" placeholder="열 ${ci+1}" onchange="updateGridCol('${q.id}',${ci},this.value)"/>`).join('')}
+        <button class="add-q-btn" style="margin-top:4px;" onclick="addGridCol('${q.id}')">＋ 열 추가</button>
+      </div>
+    </div>`;
+
+  } else if (q.type==='date' || q.type==='time') {
+    body+=`<div style="font-size:13px;color:var(--muted);padding:10px 0;">응시자가 ${q.type==='date'?'날짜':'시간'}를 직접 선택합니다.</div>`;
+
+  } else if (q.type==='file') {
+    body+=`<div style="font-size:13px;color:var(--muted);padding:10px 0;">응시자가 파일을 업로드합니다. Supabase Storage에 저장됩니다.</div>`;
   }
 
-  if (mode==='exam' && q.type!=='scale') {
+  // 하단 — 시험 모드만 배점 표시, 순서 고정은 항상
+  if (mode==='exam' && !['scale','checkbox','dropdown','linear','star','grid','checkgrid','date','time','file'].includes(q.type)) {
     body+=`<div class="flex justify-between items-center mt-12">
       <div class="flex gap-8 items-center">
         <label class="fl" style="margin-bottom:0;">배점</label>
@@ -2111,8 +2236,7 @@ function qItemHTML(q, i, mode) {
       </div>
       <div class="flex gap-8 items-center">
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
-          <button class="tgl ${q.fixedOrder?'on':''}" onclick="toggleFixed('${q.id}',this)"></button>
-          순서 고정 🔒
+          <button class="tgl ${q.fixedOrder?'on':''}" onclick="toggleFixed('${q.id}',this)"></button>순서 고정 🔒
         </label>
         <button class="btn btn-xs btn-danger" onclick="deleteQ('${q.id}')">삭제</button>
       </div>
@@ -2120,8 +2244,7 @@ function qItemHTML(q, i, mode) {
   } else {
     body+=`<div class="flex justify-between items-center mt-12">
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
-        <button class="tgl ${q.fixedOrder?'on':''}" onclick="toggleFixed('${q.id}',this)"></button>
-        순서 고정 🔒
+        <button class="tgl ${q.fixedOrder?'on':''}" onclick="toggleFixed('${q.id}',this)"></button>순서 고정 🔒
       </label>
       <button class="btn btn-xs btn-danger" onclick="deleteQ('${q.id}')">삭제</button>
     </div>`;
@@ -2143,15 +2266,53 @@ function qItemHTML(q, i, mode) {
 
 function addQ(type) {
   const item = getCurrent(); if(!item) return;
+  const defaults = {
+    multiple: { options:['','','',''], answer:'0' },
+    checkbox: { options:['',''] },
+    dropdown: { options:['',''] },
+    ox:       { answer:'O' },
+    short:    { answer:'' },
+    essay:    {},
+    scale:    { scaleMin:'전혀 아니다', scaleMax:'매우 그렇다' },
+    linear:   { linearMin:1, linearMax:5, scaleMin:'', scaleMax:'' },
+    star:     { starMax:5 },
+    grid:     { rows:['행 1','행 2'], cols:['열 1','열 2','열 3'] },
+    checkgrid:{ rows:['행 1','행 2'], cols:['열 1','열 2','열 3'] },
+    date:     {},
+    time:     {},
+    file:     {},
+  };
   const q = { id:++nextQId, type, text:'', score:10,
-    options: type==='multiple'?['','','','']:undefined,
-    answer: type==='ox'?'O':type==='multiple'?'0':'',
-    modelAnswer:'', explanation:'', scaleMin:'전혀 아니다', scaleMax:'매우 그렇다',
-    fixedOrder: false };
+    modelAnswer:'', explanation:'', fixedOrder:false,
+    ...(defaults[type]||{}) };
   item.questions.push(q);
   save();
   renderQList(item.questions, item.mode);
   setTimeout(()=>{ const el=document.getElementById('qi-'+q.id); if(el){el.classList.add('open');el.scrollIntoView({behavior:'smooth'});} },50);
+}
+
+function addOption(qid) {
+  const item=getCurrent(); const q=item.questions.find(q=>String(q.id)===String(qid));
+  if(q&&q.options){ q.options.push(''); save(); renderQList(item.questions,item.mode);
+    setTimeout(()=>document.getElementById('qi-'+qid)?.classList.add('open'),50); }
+}
+function addGridRow(qid) {
+  const item=getCurrent(); const q=item.questions.find(q=>String(q.id)===String(qid));
+  if(q){ q.rows=q.rows||[]; q.rows.push('행 '+(q.rows.length+1)); save(); renderQList(item.questions,item.mode);
+    setTimeout(()=>document.getElementById('qi-'+qid)?.classList.add('open'),50); }
+}
+function addGridCol(qid) {
+  const item=getCurrent(); const q=item.questions.find(q=>String(q.id)===String(qid));
+  if(q){ q.cols=q.cols||[]; q.cols.push('열 '+(q.cols.length+1)); save(); renderQList(item.questions,item.mode);
+    setTimeout(()=>document.getElementById('qi-'+qid)?.classList.add('open'),50); }
+}
+function updateGridRow(qid,ri,val) {
+  const item=getCurrent(); const q=item.questions.find(q=>String(q.id)===String(qid));
+  if(q&&q.rows){ q.rows[ri]=val; save(); }
+}
+function updateGridCol(qid,ci,val) {
+  const item=getCurrent(); const q=item.questions.find(q=>String(q.id)===String(qid));
+  if(q&&q.cols){ q.cols[ci]=val; save(); }
 }
 function deleteQ(qid) {
   const item=getCurrent(); item.questions=item.questions.filter(q=>String(q.id)!==String(qid)); save(); renderQList(item.questions,item.mode);
@@ -2965,36 +3126,104 @@ function renderQ() {
   document.getElementById('tb-cur').textContent = currentQ+1;
   document.getElementById('prog-bar').style.width = ((currentQ+1)/activeItem.questions.length*100)+'%';
 
-  const typeLabel = {multiple:'객관식',ox:'O / X',short:'단답형',essay:'서술형',scale:'척도'}[q.type];
+  const typeLabel = {
+    multiple:'객관식', ox:'O / X', short:'단답형', essay:'서술형', scale:'척도',
+    checkbox:'체크박스', dropdown:'드롭다운', linear:'선형 배율', star:'등급',
+    grid:'객관식 그리드', checkgrid:'체크박스 그리드', date:'날짜', time:'시간', file:'파일 업로드'
+  }[q.type] || q.type;
   let inputHTML = '';
 
   if (q.type==='multiple') {
     const order = shuffledOpts[q.id] || q.options.map((_,i)=>i);
     const surveyClass = isSurvey ? ' survey' : '';
     inputHTML=`<div class="opts">`+order.map((origIdx,di)=>{
-      const isSel = answers[q.id]===origIdx;
+      const isSel = answers[String(q.id)]===origIdx;
       return `<button class="opt ${isSel?'sel'+surveyClass:''}" onclick="selectOpt(this,${origIdx})">
         <span class="opt-n">${di+1}</span><span>${q.options[origIdx]}</span>
       </button>`;
     }).join('')+`</div>`;
+
+  } else if (q.type==='checkbox') {
+    const sel = answers[String(q.id)] || [];
+    inputHTML=`<div class="check-opts">`+(q.options||[]).map((o,oi)=>{
+      const isSel = Array.isArray(sel) && sel.includes(oi);
+      return `<button class="check-opt ${isSel?'sel':''}" onclick="selectCheck(this,${oi},'${q.id}')">
+        <span class="check-box">${isSel?'✓':''}</span><span>${o}</span>
+      </button>`;
+    }).join('')+`</div>`;
+
+  } else if (q.type==='dropdown') {
+    const sel = answers[String(q.id)]??'';
+    inputHTML=`<select class="dropdown-sel" onchange="answers['${q.id}']=this.value==='__placeholder'?'':this.value;updateDots()">
+      <option value="__placeholder" ${sel===''?'selected':''}>선택하세요...</option>
+      ${(q.options||[]).map((o,oi)=>`<option value="${oi}" ${String(sel)===String(oi)?'selected':''}>${o}</option>`).join('')}
+    </select>`;
+
   } else if (q.type==='ox') {
-    const sel=answers[q.id];
+    const sel=answers[String(q.id)];
     inputHTML=`<div class="ox-wrap">
       <button class="ox-btn ${sel==='O'?'o':''}" onclick="selectOX(this,'O')">○</button>
       <button class="ox-btn ${sel==='X'?'x':''}" onclick="selectOX(this,'X')">✕</button>
     </div>`;
+
   } else if (q.type==='short') {
     inputHTML=`<input class="short-inp ${isSurvey?'survey':''}" type="text" placeholder="답을 입력하세요" value="${answers[String(q.id)]||''}" oninput="answers['${q.id}']=this.value;updateDots()"/>`;
+
   } else if (q.type==='essay') {
     const val=answers[String(q.id)]||'';
     inputHTML=`<textarea class="essay-area ${isSurvey?'survey':''}" id="essay-${q.id}" placeholder="자유롭게 서술하세요…" oninput="answers['${q.id}']=this.value;updateDots();updateCnt(${q.id})">${val}</textarea><div class="essay-cnt" id="cnt-${q.id}">${val.length}자</div>`;
+
   } else if (q.type==='scale') {
-    const sel=answers[q.id];
+    const sel=answers[String(q.id)];
     inputHTML=`<div class="scale-wrap">
       <span class="scale-label">${q.scaleMin||'전혀 아니다'}</span>
-      <div class="scale-btns">${[1,2,3,4,5].map(n=>`<button class="scale-btn ${sel===n?'sel':''}" onclick="selectScale(this,${n},${q.id})">${n}</button>`).join('')}</div>
+      <div class="scale-btns">${[1,2,3,4,5].map(n=>`<button class="scale-btn ${sel===n?'sel':''}" onclick="selectScale(this,${n},'${q.id}')">${n}</button>`).join('')}</div>
       <span class="scale-label">${q.scaleMax||'매우 그렇다'}</span>
     </div>`;
+
+  } else if (q.type==='linear') {
+    const min=q.linearMin??1, max=q.linearMax??5;
+    const sel=answers[String(q.id)];
+    const nums=Array.from({length:max-min+1},(_,i)=>i+min);
+    inputHTML=`<div class="linear-wrap">
+      <div class="linear-btns">${nums.map(n=>`<button class="linear-btn ${sel===n?'sel':''}" onclick="selectLinear(this,${n},'${q.id}')">${n}</button>`).join('')}</div>
+      <div class="linear-labels"><span>${q.scaleMin||''}</span><span>${q.scaleMax||''}</span></div>
+    </div>`;
+
+  } else if (q.type==='star') {
+    const max=q.starMax||5;
+    const sel=answers[String(q.id)]||0;
+    inputHTML=`<div class="star-wrap">${Array.from({length:max},(_,i)=>i+1).map(n=>
+      `<button class="star-btn ${n<=sel?'sel':''}" onclick="selectStar(this,${n},'${q.id}',${max})">★</button>`
+    ).join('')}<span style="font-size:13px;color:var(--muted);margin-left:8px;" id="star-label-${q.id}">${sel?sel+'점':''}</span></div>`;
+
+  } else if (q.type==='grid' || q.type==='checkgrid') {
+    const isCheck = q.type==='checkgrid';
+    const sel = answers[String(q.id)] || {};
+    inputHTML=`<div style="overflow-x:auto;"><table class="grid-table">
+      <thead><tr><th></th>${(q.cols||[]).map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+      <tbody>${(q.rows||[]).map((r,ri)=>`<tr><td style="text-align:left;font-weight:500;">${r}</td>${(q.cols||[]).map((_,ci)=>
+        isCheck
+          ? `<td><input type="checkbox" class="grid-check" ${(sel[ri]||[]).includes(ci)?'checked':''} onchange="selectGridCheck('${q.id}',${ri},${ci},this.checked)"/></td>`
+          : `<td><input type="radio" class="grid-radio" name="grid-${q.id}-row${ri}" ${sel[ri]===ci?'checked':''} onchange="selectGrid('${q.id}',${ri},${ci})"/></td>`
+      ).join('')}</tr>`).join('')}
+      </tbody>
+    </table></div>`;
+
+  } else if (q.type==='date') {
+    inputHTML=`<input type="date" class="date-inp" value="${answers[String(q.id)]||''}" onchange="answers['${q.id}']=this.value;updateDots()"/>`;
+
+  } else if (q.type==='time') {
+    inputHTML=`<input type="time" class="date-inp" value="${answers[String(q.id)]||''}" onchange="answers['${q.id}']=this.value;updateDots()"/>`;
+
+  } else if (q.type==='file') {
+    const uploaded = answers[String(q.id)];
+    inputHTML=`<div class="file-upload-zone ${uploaded?'has-file':''}" onclick="document.getElementById('file-input-${q.id}').click()">
+      <div style="font-size:24px;margin-bottom:8px;">📎</div>
+      <div>${uploaded ? '파일이 업로드되었습니다' : '클릭하여 파일 선택'}</div>
+      ${uploaded ? `<div style="font-size:12px;color:var(--accent2);margin-top:4px;">${uploaded.name||'업로드 완료'}</div>` : '<div style="font-size:12px;color:var(--dim);margin-top:4px;">모든 파일 형식 지원</div>'}
+    </div>
+    <input type="file" id="file-input-${q.id}" style="display:none;" onchange="uploadFile(this,'${q.id}')"/>`;
   }
 
   const isLast = currentQ===activeItem.questions.length-1;
@@ -3117,7 +3346,67 @@ function selectScale(el,n,qid) {
   el.classList.add('sel'); answers[String(qid)]=n; updateDots();
 }
 
-function nextQ() { if(currentQ<activeItem.questions.length-1){currentQ++;renderQ();} }
+function selectCheck(el, oi, qid) {
+  let sel = answers[String(qid)] || [];
+  if (!Array.isArray(sel)) sel = [];
+  if (sel.includes(oi)) sel = sel.filter(v=>v!==oi);
+  else sel = [...sel, oi];
+  answers[String(qid)] = sel;
+  el.classList.toggle('sel', sel.includes(oi));
+  el.querySelector('.check-box').textContent = sel.includes(oi) ? '✓' : '';
+  updateDots();
+}
+function selectLinear(el, n, qid) {
+  el.closest('.linear-btns').querySelectorAll('.linear-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+  answers[String(qid)] = n; updateDots();
+}
+function selectStar(el, n, qid, max) {
+  const stars = el.parentElement.querySelectorAll('.star-btn');
+  stars.forEach((s,i) => s.classList.toggle('sel', i<n));
+  answers[String(qid)] = n;
+  const lbl = document.getElementById('star-label-'+qid);
+  if (lbl) lbl.textContent = n+'점';
+  updateDots();
+}
+function selectGrid(qid, ri, ci) {
+  let sel = answers[String(qid)] || {};
+  sel[ri] = ci;
+  answers[String(qid)] = sel; updateDots();
+}
+function selectGridCheck(qid, ri, ci, checked) {
+  let sel = answers[String(qid)] || {};
+  if (!sel[ri]) sel[ri] = [];
+  if (checked) { if(!sel[ri].includes(ci)) sel[ri].push(ci); }
+  else sel[ri] = sel[ri].filter(v=>v!==ci);
+  answers[String(qid)] = sel; updateDots();
+}
+
+async function uploadFile(input, qid) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!window.sb) { alert('Supabase 연결 필요'); return; }
+
+  const ext = file.name.split('.').pop();
+  const path = `responses/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+
+  // 업로드 중 표시
+  const zone = input.previousElementSibling;
+  if (zone) zone.innerHTML = `<div style="font-size:24px;margin-bottom:8px;">⏳</div><div>업로드 중...</div>`;
+
+  try {
+    const { data, error } = await sb.storage.from('testify-uploads').upload(path, file, { upsert:true });
+    if (error) throw error;
+    const { data: urlData } = sb.storage.from('testify-uploads').getPublicUrl(path);
+    answers[String(qid)] = { name: file.name, url: urlData.publicUrl, path };
+    updateDots();
+    if (zone) zone.innerHTML = `<div style="font-size:24px;margin-bottom:8px;">✅</div><div style="font-weight:600;">${file.name}</div><div style="font-size:12px;color:var(--accent2);margin-top:4px;">업로드 완료</div>`;
+    zone.classList.add('has-file');
+  } catch(e) {
+    alert('파일 업로드 실패: ' + e.message);
+    if (zone) zone.innerHTML = `<div style="font-size:24px;margin-bottom:8px;">📎</div><div>클릭하여 파일 선택</div>`;
+  }
+}
 function prevQ() { if(currentQ>0){currentQ--;renderQ();} }
 
 function renderDots() {
@@ -3161,8 +3450,18 @@ function doSubmit() {
   activeItem.questions.forEach(q=>{
     const qid = String(q.id);
     const ans = answers[qid] !== undefined ? answers[qid] : answers[q.id];
-    if(isSurvey||q.type==='scale'||q.type==='essay') {
-      pend++; items2.push({q:q.text,ok:null,mine:String(ans??'(미작성)'),type:q.type});
+    const surveyTypes = ['checkbox','dropdown','linear','star','grid','checkgrid','date','time','file','scale','essay'];
+    if(isSurvey || surveyTypes.includes(q.type)) {
+      let mineText = '(미작성)';
+      if (ans !== undefined && ans !== '' && ans !== null) {
+        if (q.type==='checkbox') mineText = (Array.isArray(ans)?ans:[]).map(i=>q.options[i]).join(', ');
+        else if (q.type==='dropdown') mineText = q.options[ans] || ans;
+        else if (q.type==='star') mineText = ans+'점';
+        else if (q.type==='file') mineText = ans.name || '파일 첨부됨';
+        else if (q.type==='grid'||q.type==='checkgrid') mineText = '응답 완료';
+        else mineText = String(ans);
+      }
+      pend++; items2.push({q:q.text,ok:null,mine:mineText,type:q.type});
     } else if(q.type==='multiple') {
       const correct=String(ans)===String(q.answer);
       if(correct){score+=q.score;ok++;}else ng++;
@@ -3310,6 +3609,11 @@ async function loadExamsFromDB() {
           score: q.score || 10,
           explanation: q.explanation || '',
           fixedOrder: q.fixed_order || false,
+          rows: q.rows || undefined,
+          cols: q.cols || undefined,
+          linearMin: q.linear_min ?? undefined,
+          linearMax: q.linear_max ?? undefined,
+          starMax: q.star_max || undefined,
         }))
     }));
 
@@ -3401,6 +3705,11 @@ async function saveItemToDB(item) {
         score: q.score || 10,
         explanation: q.explanation || null,
         fixed_order: q.fixedOrder || false,
+        rows: q.rows || null,
+        cols: q.cols || null,
+        linear_min: q.linearMin ?? null,
+        linear_max: q.linearMax ?? null,
+        star_max: q.starMax || null,
       });
     }
     console.log('✅ 시험 저장 완료:', item.title);
