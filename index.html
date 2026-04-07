@@ -1320,7 +1320,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
       시험 시작 후 다른 탭으로 이동하거나 뒤로 가기 시 자동으로 기록됩니다. 시간이 초과되면 즉시 제출됩니다.
     </div>
     <hr class="divider">
-    <div class="fg"><label class="fl">이름</label><input class="intro-fi" id="inp-name" placeholder="홍길동" /></div>
+    <div class="fg" id="name-group"><label class="fl">이름</label><input class="intro-fi" id="inp-name" placeholder="홍길동" /></div>
     <div class="fg" id="pw-group">
       <label class="fl">응시 비밀번호</label>
       <input class="intro-fi" type="text" id="inp-pw" placeholder="관리자에게 받은 비밀번호" onkeydown="if(event.key==='Enter')startExam()" />
@@ -2164,7 +2164,22 @@ function qItemHTML(q, i, mode) {
     grid:'객관식 그리드', checkgrid:'체크박스 그리드', date:'날짜', time:'시간', file:'파일 업로드'
   }[q.type] || q.type;
 
-  let body = `<div class="fg"><label class="fl">문제</label><textarea class="fi" rows="2" onchange="updateQ('${q.id}','text',this.value)">${q.text||''}</textarea></div>`;
+  const allTypes = mode === 'exam'
+    ? ['multiple','ox','short','essay']
+    : ['multiple','checkbox','dropdown','scale','linear','star','grid','checkgrid','short','essay','date','time','file'];
+  const typeNames = {
+    multiple:'객관식', ox:'OX', short:'단답형', essay:'서술형', scale:'척도',
+    checkbox:'체크박스', dropdown:'드롭다운', linear:'선형 배율', star:'등급(별점)',
+    grid:'객관식 그리드', checkgrid:'체크박스 그리드', date:'날짜', time:'시간', file:'파일 업로드'
+  };
+  const typeSelector = `<div class="fg" style="margin-bottom:12px;">
+    <label class="fl">문항 유형</label>
+    <select class="fi" style="width:auto;" onchange="changeQType('${q.id}', this.value)">
+      ${allTypes.map(t => `<option value="${t}" ${q.type===t?'selected':''}>${typeNames[t]}</option>`).join('')}
+    </select>
+  </div>`;
+
+  let body = typeSelector + `<div class="fg"><label class="fl">문제</label><textarea class="fi" rows="2" onchange="updateQ('${q.id}','text',this.value)">${q.text||''}</textarea></div>`;
 
   if (q.type==='multiple') {
     body += `<div class="fg"><label class="fl">보기${mode==='exam'?' (번호 클릭 = 정답)':''}</label><div class="options-editor">` +
@@ -2358,6 +2373,44 @@ function toggleFixed(qid, btn) {
 }
 function reRenderQ() {
   const item=getCurrent(); renderQList(item.questions,item.mode);
+}
+
+// 유형 변경 — 보기 호환 유형끼리는 데이터 유지
+function changeQType(qid, newType) {
+  const item = getCurrent();
+  const q = item.questions.find(q => String(q.id) === String(qid));
+  if (!q || q.type === newType) return;
+
+  const optionTypes = ['multiple', 'checkbox', 'dropdown']; // 보기 구조 공유 가능
+  const sameFamily = optionTypes.includes(q.type) && optionTypes.includes(newType);
+
+  if (!sameFamily) {
+    const ok = confirm(`유형을 "${newType}"으로 바꾸면 현재 입력한 설정이 초기화됩니다. 계속할까요?`);
+    if (!ok) { reRenderQ(); return; } // 드롭다운 원래대로 복원
+  }
+
+  const defaults = {
+    multiple: { options: q.options || ['','','',''], answer: '0' },
+    checkbox: { options: q.options || ['',''] },
+    dropdown: { options: q.options || ['',''] },
+    ox:       { answer: 'O' },
+    short:    { answer: '' },
+    essay:    {},
+    scale:    { scaleMin:'전혀 아니다', scaleMax:'매우 그렇다' },
+    linear:   { linearMin:1, linearMax:5, scaleMin:'', scaleMax:'' },
+    star:     { starMax:5 },
+    grid:     { rows:['행 1','행 2'], cols:['열 1','열 2','열 3'] },
+    checkgrid:{ rows:['행 1','행 2'], cols:['열 1','열 2','열 3'] },
+    date:     {}, time:{}, file:{},
+  };
+
+  // 기존 텍스트/순서 고정은 유지, 나머지는 newType 기본값으로 교체
+  const preserved = { id: q.id, text: q.text, score: q.score, fixedOrder: q.fixedOrder, type: newType };
+  Object.assign(q, defaults[newType] || {}, preserved);
+
+  save();
+  reRenderQ();
+  setTimeout(() => document.getElementById('qi-' + qid)?.classList.add('open'), 50);
 }
 
 // ══ EXCEL ══
@@ -3042,8 +3095,11 @@ function loadIntro(item) {
   startBtn.textContent = isSurvey ? '설문 시작하기 →' : '시험 시작하기 →';
   startBtn.className = 'btn-start' + (isSurvey?' survey-start':'');
 
+  const nameGroup = document.getElementById('name-group');
+  if (nameGroup) nameGroup.style.display = isSurvey ? 'none' : '';
   const inp = document.getElementById('inp-name');
   inp.className = 'intro-fi' + (isSurvey?' survey-fi':'');
+  if (isSurvey) inp.value = '익명';
   const pw = document.getElementById('inp-pw');
   pw.className = 'intro-fi' + (isSurvey?' survey-fi':'');
 }
@@ -3078,7 +3134,8 @@ function startExam() {
   const name = document.getElementById('inp-name').value.trim();
   const pw   = document.getElementById('inp-pw').value.trim();
   const err  = document.getElementById('inp-err');
-  if (!name) { err.classList.add('show'); return; }
+  const isSurveyStart = activeItem.mode === 'survey';
+  if (!isSurveyStart && !name) { err.classList.add('show'); return; }
   if (activeItem.pw && pw !== activeItem.pw) { err.classList.add('show'); return; }
   err.classList.remove('show');
   examineeName = name;
@@ -3432,6 +3489,10 @@ async function uploadFile(input, qid) {
   }
 }
 function prevQ() { if(currentQ>0){currentQ--;renderQ();} }
+function nextQ() {
+  if(currentQ < activeItem.questions.length - 1) { currentQ++; renderQ(); }
+  else openReview();
+}
 
 function renderDots() {
   const isSurvey=activeItem.mode==='survey';
