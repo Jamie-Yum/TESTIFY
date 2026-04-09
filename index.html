@@ -1102,10 +1102,6 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
       <div class="ph">
         <div style="flex:1;">
           <input id="editor-title-input" class="fi" style="font-size:20px;font-weight:700;letter-spacing:-.5px;background:transparent;border-color:transparent;padding:4px 8px;width:100%;max-width:480px;" placeholder="제목을 입력하세요" oninput="onEditorTitleInput(this.value)" />
-          <div style="display:flex;gap:8px;margin-top:8px;">
-            <button class="mode-btn" id="mode-exam-btn" onclick="setEditorMode('exam')" style="padding:6px 16px;font-size:12px;flex:none;width:auto;">📝 시험</button>
-            <button class="mode-btn" id="mode-survey-btn" onclick="setEditorMode('survey')" style="padding:6px 16px;font-size:12px;flex:none;width:auto;">📊 설문</button>
-          </div>
         </div>
         <div class="flex gap-10" style="align-self:flex-start;">
           <button class="btn btn-outline" onclick="saveItem(true)">임시저장</button>
@@ -1122,12 +1118,40 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
       <!-- 기본 설정 -->
       <div id="tab-basic" class="tcontent active">
         <div style="max-width:580px;">
+          <!-- 유형 선택 -->
+          <div class="fg">
+            <label class="fl">유형</label>
+            <div class="mode-row">
+              <button class="mode-btn" id="mode-exam-btn" onclick="setEditorMode('exam')">📝 시험 모드<br><small style="opacity:.6;font-size:11px;">정답·채점 있음</small></button>
+              <button class="mode-btn" id="mode-survey-btn" onclick="setEditorMode('survey')">📊 설문 모드<br><small style="opacity:.6;font-size:11px;">자유 응답 수집</small></button>
+            </div>
+          </div>
           <div class="two-col">
             <div class="fg"><label class="fl">응시 비밀번호 (없으면 공개)</label><input class="fi" id="f-pw" placeholder="예: SIDIZ25" /></div>
             <div class="fg"><label class="fl">시간 제한 (분, 0=무제한)</label><input class="fi" id="f-time" type="number" value="30" /></div>
           </div>
           <div class="fg"><label class="fl">안내 문구</label><textarea class="fi" id="f-desc" placeholder="응시자에게 보여줄 안내 문구"></textarea></div>
           <div class="fg"><label class="fl">랜덤 출제 문항 수 (0=전체)</label><input class="fi" id="f-random" type="number" value="0" /></div>
+
+          <!-- 공개 일정 -->
+          <div style="background:var(--surface2);border-radius:var(--r);padding:16px 18px;margin:16px 0;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:12px;">📅 공개 일정</div>
+            <div class="two-col">
+              <div class="fg">
+                <label class="fl">공개 시작 일시 (미설정 시 즉시)</label>
+                <input class="fi" type="datetime-local" id="f-open-at" />
+              </div>
+              <div class="fg">
+                <label class="fl">공개 종료 일시 (미설정 시 무제한)</label>
+                <input class="fi" type="datetime-local" id="f-close-at" />
+              </div>
+            </div>
+            <div class="fg" style="margin-bottom:0;">
+              <label class="fl">링크 잠금 시 안내 메시지</label>
+              <input class="fi" id="f-locked-msg" placeholder="아직 응시 시간이 아닙니다. 잠시 후 다시 시도해주세요." />
+            </div>
+          </div>
+
           <div class="toggle-row"><div><div class="tgl-label">결과 즉시 공개</div><div class="tgl-desc">제출 후 응시자에게 점수와 정오표 표시</div></div><button class="tgl on" id="tgl-result" onclick="this.classList.toggle('on')"></button></div>
           <div class="toggle-row"><div><div class="tgl-label">재시험 허용</div><div class="tgl-desc">동일 링크로 재응시 가능</div></div><button class="tgl" id="tgl-retake" onclick="this.classList.toggle('on')"></button></div>
           <div class="toggle-row" id="tgl-row-shuffle"><div><div class="tgl-label">보기 순서 랜덤</div><div class="tgl-desc">객관식 보기를 응시자마다 다르게 섞기</div></div><button class="tgl on" id="tgl-shuffle" onclick="this.classList.toggle('on')"></button></div>
@@ -1298,6 +1322,15 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
     관리자 미리보기 모드 — 실제 응시자 화면입니다
   </div>
   <button class="preview-back-btn" onclick="exitPreview()">← 메인화면으로 돌아가기</button>
+</div>
+
+<!-- ══ 잠금 화면 ══ -->
+<div id="view-locked" class="view" style="align-items:center;justify-content:center;background:var(--bg);">
+  <div style="text-align:center;max-width:400px;padding:40px 24px;animation:fadeUp .5s ease;">
+    <div style="font-size:48px;margin-bottom:20px;">🔒</div>
+    <div style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:12px;letter-spacing:-.3px;">접근할 수 없습니다</div>
+    <div id="locked-msg" style="font-size:15px;color:var(--muted);line-height:1.7;white-space:pre-line;"></div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -1969,6 +2002,9 @@ function loadEditorFields(item) {
   document.getElementById('f-desc').value = item.desc;
   document.getElementById('f-time').value = item.time;
   document.getElementById('f-random').value = item.random;
+  document.getElementById('f-open-at').value = item.openAt || '';
+  document.getElementById('f-close-at').value = item.closeAt || '';
+  document.getElementById('f-locked-msg').value = item.lockedMsg || '';
   document.getElementById('tgl-result').className = 'tgl' + (item.showResult?' on':'');
   document.getElementById('tgl-retake').className  = 'tgl' + (item.retake?' on':'');
   document.getElementById('tgl-shuffle').className = 'tgl' + (item.shuffleOpts?' on':'');
@@ -2015,7 +2051,9 @@ function saveItem(draft) {
   item.shuffleOpts= document.getElementById('tgl-shuffle').classList.contains('on');
   item.shuffleQ   = document.getElementById('tgl-qshuffle').classList.contains('on');
   item.status = draft ? 'draft' : 'live';
-  // 응시자 명단
+  item.openAt    = document.getElementById('f-open-at').value || '';
+  item.closeAt   = document.getElementById('f-close-at').value || '';
+  item.lockedMsg = document.getElementById('f-locked-msg').value.trim();
   const rosterRaw = document.getElementById('f-roster').value;
   item.roster = rosterRaw.split('\n').map(s => s.trim()).filter(Boolean);
   // 감사 메시지 (설문 전용)
@@ -2444,65 +2482,180 @@ function renderSurveyAnalysis(item, responses) {
   if (!container || !item.questions.length) return;
 
   container.innerHTML = item.questions.map((q, i) => {
-    const typeLabel = { multiple:'객관식', ox:'O/X', short:'단답형', essay:'서술형', scale:'척도 (1~5)' }[q.type] || q.type;
-    const answers = responses.map(r => r.answers?.[q.id]).filter(a => a !== undefined && a !== '' && a !== null);
+    const typeLabel = {
+      multiple:'객관식', ox:'O/X', short:'단답형', essay:'서술형', scale:'척도',
+      checkbox:'체크박스', dropdown:'드롭다운', linear:'선형 배율', star:'등급(별점)',
+      grid:'객관식 그리드', checkgrid:'체크박스 그리드', date:'날짜', time:'시간', file:'파일 업로드'
+    }[q.type] || q.type;
+
+    // 응답 추출 (체크박스 등 배열/객체 타입 포함)
+    const rawAnswers = responses.map(r => r.answers?.[q.id]).filter(a => a !== undefined && a !== null && a !== '');
+    const respondentCount = rawAnswers.length;
 
     let analysisHTML = '';
 
     if (q.type === 'scale') {
-      // 척도형 — 평균 + 분포
-      const nums = answers.map(Number).filter(n => !isNaN(n) && n >= 1 && n <= 5);
-      const avg = nums.length ? (nums.reduce((a,b) => a+b, 0) / nums.length).toFixed(1) : '—';
-      const dist = [1,2,3,4,5].map(v => ({ val: v, cnt: nums.filter(n => n === v).length }));
-      const maxCnt = Math.max(...dist.map(d => d.cnt), 1);
+      const nums = rawAnswers.map(Number).filter(n => !isNaN(n) && n >= 1 && n <= 5);
+      const avg = nums.length ? (nums.reduce((a,b)=>a+b,0)/nums.length).toFixed(1) : '—';
+      const dist = [1,2,3,4,5].map(v=>({val:v, cnt:nums.filter(n=>n===v).length}));
+      const maxCnt = Math.max(...dist.map(d=>d.cnt), 1);
       analysisHTML = `
         <div class="sq-avg-badge">${avg}<span style="font-size:13px;color:var(--muted);"> / 5</span></div>
-        <div style="clear:both;"></div>
         <div class="dist-bar-wrap" style="margin-top:10px;">
-          ${dist.map(d => `
-            <div class="dist-row">
-              <div class="dist-label">${d.val}점</div>
-              <div class="dist-bar-bg"><div class="dist-bar-fill scale-fill" style="width:${Math.round(d.cnt/maxCnt*100)}%"></div></div>
-              <div class="dist-cnt">${d.cnt}명</div>
-            </div>`).join('')}
+          ${dist.map(d=>`<div class="dist-row">
+            <div class="dist-label">${d.val}점</div>
+            <div class="dist-bar-bg"><div class="dist-bar-fill scale-fill" style="width:${Math.round(d.cnt/maxCnt*100)}%"></div></div>
+            <div class="dist-cnt">${d.cnt}명</div>
+          </div>`).join('')}
+        </div>`;
+
+    } else if (q.type === 'linear') {
+      const min = q.linearMin ?? 1, max = q.linearMax ?? 5;
+      const nums = rawAnswers.map(Number).filter(n => !isNaN(n));
+      const avg = nums.length ? (nums.reduce((a,b)=>a+b,0)/nums.length).toFixed(1) : '—';
+      const dist = Array.from({length:max-min+1},(_,i)=>i+min).map(v=>({val:v, cnt:nums.filter(n=>n===v).length}));
+      const maxCnt = Math.max(...dist.map(d=>d.cnt), 1);
+      analysisHTML = `
+        <div class="sq-avg-badge">${avg}<span style="font-size:13px;color:var(--muted);"> / ${max}</span></div>
+        <div class="dist-bar-wrap" style="margin-top:10px;">
+          ${dist.map(d=>`<div class="dist-row">
+            <div class="dist-label">${d.val}점</div>
+            <div class="dist-bar-bg"><div class="dist-bar-fill scale-fill" style="width:${Math.round(d.cnt/maxCnt*100)}%"></div></div>
+            <div class="dist-cnt">${d.cnt}명</div>
+          </div>`).join('')}
+        </div>`;
+
+    } else if (q.type === 'star') {
+      const max = q.starMax || 5;
+      const nums = rawAnswers.map(Number).filter(n => !isNaN(n) && n >= 1 && n <= max);
+      const avg = nums.length ? (nums.reduce((a,b)=>a+b,0)/nums.length).toFixed(1) : '—';
+      const dist = Array.from({length:max},(_,i)=>i+1).map(v=>({val:v, cnt:nums.filter(n=>n===v).length}));
+      const maxCnt = Math.max(...dist.map(d=>d.cnt), 1);
+      analysisHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span class="sq-avg-badge">${avg}</span>
+          <span style="font-size:20px;">${Array.from({length:max},(_,i)=>`<span style="color:${i<Math.round(avg)?'#f5c518':'var(--border2)'};">★</span>`).join('')}</span>
+        </div>
+        <div class="dist-bar-wrap">
+          ${dist.map(d=>`<div class="dist-row">
+            <div class="dist-label">${d.val}★</div>
+            <div class="dist-bar-bg"><div class="dist-bar-fill" style="background:#f5c518;width:${Math.round(d.cnt/maxCnt*100)}%"></div></div>
+            <div class="dist-cnt">${d.cnt}명</div>
+          </div>`).join('')}
         </div>`;
 
     } else if (q.type === 'multiple') {
-      // 객관식 — 선택지별 분포
       const opts = q.options || [];
-      const dist = opts.map((o, oi) => ({ label: o || `보기${oi+1}`, cnt: answers.filter(a => String(a) === String(oi)).length }));
-      const maxCnt = Math.max(...dist.map(d => d.cnt), 1);
+      const dist = opts.map((o,oi)=>({label:o||`보기${oi+1}`, cnt:rawAnswers.filter(a=>String(a)===String(oi)).length}));
+      const maxCnt = Math.max(...dist.map(d=>d.cnt), 1);
+      analysisHTML = `<div class="dist-bar-wrap">
+        ${dist.map(d=>`<div class="dist-row">
+          <div class="dist-label" title="${d.label}">${d.label}</div>
+          <div class="dist-bar-bg"><div class="dist-bar-fill" style="width:${Math.round(d.cnt/maxCnt*100)}%"></div></div>
+          <div class="dist-cnt">${d.cnt}명</div>
+        </div>`).join('')}
+      </div>`;
+
+    } else if (q.type === 'checkbox') {
+      // 체크박스 — 각 선택지별 선택 횟수 (복수선택이므로 총합 > 응답자 수 가능)
+      const opts = q.options || [];
+      const dist = opts.map((o,oi)=>({
+        label: o || `보기${oi+1}`,
+        cnt: rawAnswers.filter(a => Array.isArray(a) && a.includes(oi)).length
+      }));
+      const maxCnt = Math.max(...dist.map(d=>d.cnt), 1);
       analysisHTML = `
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">복수 선택 가능 — 응답자 ${respondentCount}명</div>
         <div class="dist-bar-wrap">
-          ${dist.map(d => `
-            <div class="dist-row">
-              <div class="dist-label" title="${d.label}">${d.label}</div>
-              <div class="dist-bar-bg"><div class="dist-bar-fill" style="width:${Math.round(d.cnt/maxCnt*100)}%"></div></div>
-              <div class="dist-cnt">${d.cnt}명</div>
-            </div>`).join('')}
+          ${dist.map(d=>`<div class="dist-row">
+            <div class="dist-label" title="${d.label}">${d.label}</div>
+            <div class="dist-bar-bg"><div class="dist-bar-fill" style="width:${Math.round(d.cnt/maxCnt*100)}%"></div></div>
+            <div class="dist-cnt">${d.cnt}명</div>
+          </div>`).join('')}
         </div>`;
+
+    } else if (q.type === 'dropdown') {
+      const opts = q.options || [];
+      const dist = opts.map((o,oi)=>({label:o||`선택지${oi+1}`, cnt:rawAnswers.filter(a=>String(a)===String(oi)).length}));
+      const maxCnt = Math.max(...dist.map(d=>d.cnt), 1);
+      analysisHTML = `<div class="dist-bar-wrap">
+        ${dist.map(d=>`<div class="dist-row">
+          <div class="dist-label" title="${d.label}">${d.label}</div>
+          <div class="dist-bar-bg"><div class="dist-bar-fill" style="width:${Math.round(d.cnt/maxCnt*100)}%"></div></div>
+          <div class="dist-cnt">${d.cnt}명</div>
+        </div>`).join('')}
+      </div>`;
 
     } else if (q.type === 'ox') {
-      const oCnt = answers.filter(a => a === 'O').length;
-      const xCnt = answers.filter(a => a === 'X').length;
+      const oCnt = rawAnswers.filter(a=>a==='O').length;
+      const xCnt = rawAnswers.filter(a=>a==='X').length;
       const maxCnt = Math.max(oCnt, xCnt, 1);
-      analysisHTML = `
-        <div class="dist-bar-wrap">
-          <div class="dist-row">
-            <div class="dist-label">O</div>
-            <div class="dist-bar-bg"><div class="dist-bar-fill" style="width:${Math.round(oCnt/maxCnt*100)}%"></div></div>
-            <div class="dist-cnt">${oCnt}명</div>
-          </div>
-          <div class="dist-row">
-            <div class="dist-label">X</div>
-            <div class="dist-bar-bg"><div class="dist-bar-fill" style="background:var(--accent3);width:${Math.round(xCnt/maxCnt*100)}%"></div></div>
-            <div class="dist-cnt">${xCnt}명</div>
-          </div>
-        </div>`;
+      analysisHTML = `<div class="dist-bar-wrap">
+        <div class="dist-row">
+          <div class="dist-label">O</div>
+          <div class="dist-bar-bg"><div class="dist-bar-fill" style="width:${Math.round(oCnt/maxCnt*100)}%"></div></div>
+          <div class="dist-cnt">${oCnt}명</div>
+        </div>
+        <div class="dist-row">
+          <div class="dist-label">X</div>
+          <div class="dist-bar-bg"><div class="dist-bar-fill" style="background:var(--accent3);width:${Math.round(xCnt/maxCnt*100)}%"></div></div>
+          <div class="dist-cnt">${xCnt}명</div>
+        </div>
+      </div>`;
+
+    } else if (q.type === 'grid' || q.type === 'checkgrid') {
+      const rows = q.rows || [];
+      const cols = q.cols || [];
+      analysisHTML = rows.map((r,ri) => {
+        if (q.type === 'grid') {
+          const dist = cols.map((c,ci)=>({label:c, cnt:rawAnswers.filter(a=>a&&a[ri]===ci).length}));
+          const maxCnt = Math.max(...dist.map(d=>d.cnt), 1);
+          return `<div style="margin-bottom:14px;">
+            <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;">${r}</div>
+            <div class="dist-bar-wrap">
+              ${dist.map(d=>`<div class="dist-row">
+                <div class="dist-label">${d.label}</div>
+                <div class="dist-bar-bg"><div class="dist-bar-fill" style="width:${Math.round(d.cnt/maxCnt*100)}%"></div></div>
+                <div class="dist-cnt">${d.cnt}명</div>
+              </div>`).join('')}
+            </div>
+          </div>`;
+        } else {
+          const dist = cols.map((c,ci)=>({label:c, cnt:rawAnswers.filter(a=>a&&Array.isArray(a[ri])&&a[ri].includes(ci)).length}));
+          const maxCnt = Math.max(...dist.map(d=>d.cnt), 1);
+          return `<div style="margin-bottom:14px;">
+            <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;">${r}</div>
+            <div class="dist-bar-wrap">
+              ${dist.map(d=>`<div class="dist-row">
+                <div class="dist-label">${d.label}</div>
+                <div class="dist-bar-bg"><div class="dist-bar-fill" style="width:${Math.round(d.cnt/maxCnt*100)}%"></div></div>
+                <div class="dist-cnt">${d.cnt}명</div>
+              </div>`).join('')}
+            </div>
+          </div>`;
+        }
+      }).join('');
+
+    } else if (q.type === 'date' || q.type === 'time') {
+      const vals = rawAnswers.filter(a=>typeof a==='string'&&a.trim());
+      const freq = {};
+      vals.forEach(v => { freq[v]=(freq[v]||0)+1; });
+      const sorted = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,10);
+      const maxCnt = sorted.length ? sorted[0][1] : 1;
+      analysisHTML = sorted.length
+        ? `<div class="dist-bar-wrap">${sorted.map(([v,c])=>`<div class="dist-row">
+            <div class="dist-label">${v}</div>
+            <div class="dist-bar-bg"><div class="dist-bar-fill" style="width:${Math.round(c/maxCnt*100)}%"></div></div>
+            <div class="dist-cnt">${c}명</div>
+          </div>`).join('')}</div>`
+        : `<div style="color:var(--muted);font-size:13px;">응답 없음</div>`;
 
     } else {
-      // 단답형 / 서술형 — 텍스트 목록 + AI 요약 자리
-      const textAnswers = answers.filter(a => typeof a === 'string' && a.trim());
+      // 단답형 / 서술형 / 파일 — 텍스트 목록 + AI 요약
+      const textAnswers = q.type === 'file'
+        ? rawAnswers.map(a => typeof a === 'object' ? a.name || '파일 첨부됨' : String(a))
+        : rawAnswers.filter(a => typeof a === 'string' && a.trim());
+
       analysisHTML = `
         <div class="ai-summary-box" id="ai-box-q${q.id}">
           <div class="ai-summary-label">✦ AI 요약</div>
@@ -2510,7 +2663,7 @@ function renderSurveyAnalysis(item, responses) {
         </div>
         <div class="text-resp-list">
           ${textAnswers.length
-            ? textAnswers.map(a => `<div class="text-resp-item">${a}</div>`).join('')
+            ? textAnswers.map(a=>`<div class="text-resp-item">${a}</div>`).join('')
             : `<div style="color:var(--muted);font-size:13px;padding:8px 0;">응답 없음</div>`}
         </div>`;
     }
@@ -2521,7 +2674,7 @@ function renderSurveyAnalysis(item, responses) {
         <div class="sq-text">${q.text || '(문항 없음)'}</div>
         <span class="sq-type-tag">${typeLabel}</span>
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">응답 ${answers.length}명 / 전체 ${responses.length}명</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">응답 ${respondentCount}명 / 전체 ${responses.length}명</div>
       ${analysisHTML}
     </div>`;
   }).join('');
@@ -3722,6 +3875,9 @@ async function loadExamsFromDB() {
       status: e.status,
       roster: e.roster || [],
       thankMsg: e.thank_msg || '',
+      openAt:   e.open_at || '',
+      closeAt:  e.close_at || '',
+      lockedMsg: e.locked_msg || '',
       questions: questionsData
         .filter(q => q.exam_id === e.id)
         .sort((a, b) => a.sort_order - b.sort_order)
@@ -3814,6 +3970,9 @@ async function saveItemToDB(item) {
       status: item.status,
       roster: item.roster || [],
       thank_msg: item.thankMsg || null,
+      open_at:   item.openAt || null,
+      close_at:  item.closeAt || null,
+      locked_msg: item.lockedMsg || null,
     });
 
     // 기존 문항 삭제 후 재저장
@@ -4000,20 +4159,56 @@ function handleUrlParams() {
   const adminId = params.get('admin');
 
   if (testId) {
-    // 응시자 링크로 접속한 경우
     const item = items.find(i => i.id === testId);
-    if (item) {
-      loadIntro(item);
-      showView('intro', false);
-    } else {
-      alert('존재하지 않는 시험입니다.');
+    if (!item) { alert('존재하지 않는 시험입니다.'); return; }
+
+    const now = new Date();
+
+    // 링크 잠금 상태 체크
+    if (item.status === 'closed') {
+      showLockedScreen(item.lockedMsg || '현재 응시할 수 없습니다.');
+      return;
     }
+
+    // 공개 시작 시각 체크
+    if (item.openAt) {
+      const openTime = new Date(item.openAt);
+      if (now < openTime) {
+        const fmt = openTime.toLocaleString('ko-KR', {month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
+        showLockedScreen(item.lockedMsg || `아직 응시 시간이 아닙니다.\n${fmt}부터 응시할 수 있습니다.`);
+        return;
+      }
+    }
+
+    // 공개 종료 시각 체크
+    if (item.closeAt) {
+      const closeTime = new Date(item.closeAt);
+      if (now > closeTime) {
+        showLockedScreen(item.lockedMsg || '응시 기간이 종료되었습니다.');
+        return;
+      }
+    }
+
+    loadIntro(item);
+    showView('intro', false);
+
   } else if (adminId) {
-    // 관리자 링크로 접속한 경우
     showView('admin', false);
     renderAll();
   }
-  // 파라미터 없으면 랜딩 그대로
+}
+
+function showLockedScreen(msg) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById('view-locked');
+  if (el) {
+    document.getElementById('locked-msg').textContent = msg;
+    el.classList.add('active');
+  } else {
+    // fallback
+    document.getElementById('view-landing').classList.add('active');
+    alert(msg);
+  }
 }
 
 function openShare(id){
