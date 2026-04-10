@@ -3889,7 +3889,8 @@ function doSubmit() {
     } else if(q.type==='multiple') {
       const correct=String(ans)===String(q.answer);
       if(correct){score+=q.score;ok++;}else ng++;
-      items2.push({q:q.text,ok:correct,mine:q.options[ans]??'미응답',right:q.options[parseInt(q.answer)],type:q.type,expl:q.explanation});
+      const ansIdx = ans !== undefined && ans !== null && ans !== '' ? parseInt(ans) : undefined;
+      items2.push({q:q.text,ok:correct,mine:(ansIdx !== undefined && !isNaN(ansIdx) ? q.options[ansIdx] : undefined)??'미응답',right:q.options[parseInt(q.answer)],type:q.type,expl:q.explanation});
     } else if(q.type==='ox') {
       const correct=ans===q.answer;
       if(correct){score+=q.score;ok++;}else ng++;
