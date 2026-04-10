@@ -1275,6 +1275,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
           <div style="display:flex;gap:8px;">
             <button class="btn btn-danger btn-sm" id="btn-clear-all" onclick="clearAllResponses()">🗑 전체 삭제</button>
             <button class="btn btn-accent" onclick="downloadResultExcel()">📥 엑셀 다운로드</button>
+            <button class="btn btn-outline btn-sm" onclick="downloadAnswerKeyPDF()" style="border-color:var(--accent);color:var(--accent);">📄 정답·해설 PDF</button>
           </div>
         </div>
 
@@ -1325,7 +1326,7 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
     <div class="ph">
       <div><div class="ph-title">SE 명단 관리</div><div class="ph-sub" id="member-count-sub">Sitting Expert 인원 정보</div></div>
       <div class="flex gap-10" style="flex-wrap:wrap;">
-        <button class="btn btn-outline btn-sm" onclick="openMemberColumnSettings()">⚙ 항목 설정</button>
+        <button class="btn btn-outline btn-sm" onclick="openMemberColumnSettings()">⚙ 항목 관리</button>
         <button class="btn btn-outline btn-sm" onclick="copySelectedMembers()">📋 선택 복사</button>
         <button class="btn btn-outline btn-sm" onclick="exportMembersExcel()">📥 엑셀 내보내기</button>
         <button class="btn btn-outline btn-sm" onclick="document.getElementById('member-excel-input').click()">📤 엑셀 업로드</button>
@@ -1576,6 +1577,7 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
     </div>
     <div class="fg"><label class="fl">입사년월일</label><input class="fi" type="date" id="m-hire-date"/></div>
     <div class="fg"><label class="fl">메모</label><textarea class="fi" id="m-memo" rows="2" placeholder="기타 메모"></textarea></div>
+    <div id="m-dynamic-fields"></div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModalById('member-modal')">취소</button>
       <button class="btn btn-accent" onclick="saveMember()">저장</button>
@@ -1585,14 +1587,33 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
 
 <!-- ══ 컬럼 설정 모달 ══ -->
 <div class="modal-bg" id="member-col-modal">
-  <div class="modal" style="width:360px;">
+  <div class="modal" style="width:480px;max-height:80vh;overflow-y:auto;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <div class="modal-title">표시 항목 설정</div>
+      <div class="modal-title">항목 관리</div>
       <button onclick="closeModalById('member-col-modal')" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">×</button>
     </div>
-    <div id="member-col-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+    <!-- 새 항목 추가 -->
+    <div style="background:var(--surface2);border-radius:var(--rs);padding:14px 16px;margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;">새 항목 추가</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;">
+        <input class="fi fi-sm" id="new-col-label" placeholder="항목 이름 (예: 자격증)" />
+        <select class="fi fi-sm" id="new-col-type">
+          <option value="text">텍스트</option>
+          <option value="boolean">체크박스 (O/X)</option>
+          <option value="date">날짜</option>
+          <option value="number">숫자</option>
+        </select>
+        <button class="btn btn-accent btn-sm" onclick="addMemberColumn()">추가</button>
+      </div>
+    </div>
+
+    <!-- 기존 항목 목록 -->
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;">항목 목록</div>
+    <div id="member-col-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+
     <div class="modal-footer" style="margin-top:20px;">
-      <button class="btn btn-accent" onclick="saveMemberColSettings()">적용</button>
+      <button class="btn btn-outline" onclick="closeModalById('member-col-modal')">닫기</button>
     </div>
   </div>
 </div>
@@ -3134,9 +3155,12 @@ function openResponseDetail(itemId, responseIdx) {
   const qs = item.questions;
   // answers 키가 항상 문자열로 저장되므로 String(q.id)로 조회
   const userAnswers = r.answers || {};
-  const getAns = (q) => {
+  const sortedAnswerKeys = Object.keys(userAnswers).filter(k => !isNaN(k)).sort((a,b)=>Number(a)-Number(b));
+  const getAns = (q, qi) => {
     const v = userAnswers[String(q.id)];
-    return v !== undefined ? v : userAnswers[q.id];
+    if (v !== undefined) return v;
+    const fallbackKey = sortedAnswerKeys[qi];
+    return fallbackKey !== undefined ? userAnswers[fallbackKey] : undefined;
   };
 
   // 헤더
@@ -3146,10 +3170,10 @@ function openResponseDetail(itemId, responseIdx) {
 
   // 요약 통계
   let correct = 0, wrong = 0, pending = 0;
-  qs.forEach(q => {
+  qs.forEach((q, qi) => {
     if (q.type === 'essay') { pending++; return; }
     if (isSurvey) { pending++; return; }
-    const ua = String(getAns(q) ?? '');
+    const ua = String(getAns(q, qi) ?? '');
     const ans = String(q.answer ?? '');
     if (q.type === 'ox') {
       (ua === ans ? correct++ : wrong++);
@@ -3171,7 +3195,7 @@ function openResponseDetail(itemId, responseIdx) {
   // 문항별 결과
   const typeLabel = {multiple:'객관식', ox:'O/X', short:'단답형', essay:'서술형', scale:'척도'};
   document.getElementById('detail-question-list').innerHTML = qs.map((q, i) => {
-    const ua = getAns(q);
+    const ua = getAns(q, i);
     let isCorrect = null, myAnsText = '미응답', correctAnsText = '';
 
     if (q.type === 'multiple') {
@@ -4005,6 +4029,11 @@ let memberColumns = {
   memo:        { label:'메모',      show:false, sortable:false },
 };
 
+// DB에서 불러온 동적 커스텀 컬럼
+let dynamicColumns = []; // [{ id, key, label, type, sort_order }]
+
+const FIXED_COLS = ['_check','name','store','phone','email','employment','role','hire_date','tenure','retro_count','memo'];
+
 // 응대회고 연도/월 설정 (25년 1월~12월 기본, 필요시 추가)
 // 형식: { year:25, months:[1,2,...12] }
 const RETRO_CONFIG = { year: 25, months: [1,2,3,4,5,6,7,8,9,10,11,12] };
@@ -4036,6 +4065,18 @@ function calcTenure(hireDate) {
 async function loadMembers() {
   if (!window.sb) return;
   try {
+    // 동적 컬럼 먼저 로드
+    const { data: colData } = await sb.from('sidiz_member_columns').select('*').order('sort_order');
+    if (colData) {
+      dynamicColumns = colData;
+      // memberColumns에 동적 컬럼 반영
+      dynamicColumns.forEach(col => {
+        if (!FIXED_COLS.includes(col.key)) {
+          memberColumns[col.key] = { label: col.label, show: true, sortable: false, dynamic: true, colType: col.type };
+        }
+      });
+    }
+
     const { data, error } = await sb.from('sidiz_members').select('*').order('created_at', { ascending: true });
     if (error) { console.warn('명단 로드 오류:', error.message); return; }
     members = data || [];
@@ -4259,7 +4300,32 @@ function openEditMember(id) {
   document.getElementById('m-role').value       = m.role || '';
   document.getElementById('m-hire-date').value  = m.hire_date || '';
   document.getElementById('m-memo').value       = m.memo || '';
+  renderDynamicMemberFields(m);
   document.getElementById('member-modal').classList.add('open');
+}
+
+function renderDynamicMemberFields(m) {
+  const wrap = document.getElementById('m-dynamic-fields');
+  if (!wrap) return;
+  if (!dynamicColumns.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = dynamicColumns.map(col => {
+    const val = m ? (m[col.key] || '') : '';
+    let input = '';
+    if (col.type === 'boolean') {
+      input = `<select class="fi fi-sm" id="mdyn-${col.key}">
+        <option value="" ${val===''?'selected':''}>—</option>
+        <option value="O" ${val==='O'?'selected':''}>O</option>
+        <option value="X" ${val==='X'?'selected':''}>X</option>
+      </select>`;
+    } else if (col.type === 'date') {
+      input = `<input type="date" class="fi fi-sm" id="mdyn-${col.key}" value="${val}">`;
+    } else if (col.type === 'number') {
+      input = `<input type="number" class="fi fi-sm" id="mdyn-${col.key}" value="${val}" placeholder="숫자 입력">`;
+    } else {
+      input = `<input type="text" class="fi fi-sm" id="mdyn-${col.key}" value="${val}" placeholder="${col.label}">`;
+    }
+    return `<div class="fg"><label class="fl">${col.label}</label>${input}</div>`;
+  }).join('');
 }
 
 async function saveMember() {
@@ -4275,6 +4341,11 @@ async function saveMember() {
     hire_date:   document.getElementById('m-hire-date').value || null,
     memo:        document.getElementById('m-memo').value.trim() || null,
   };
+  // 동적 컬럼 데이터 추가
+  dynamicColumns.forEach(col => {
+    const el = document.getElementById(`mdyn-${col.key}`);
+    if (el) data[col.key] = el.value || null;
+  });
   if (!window.sb) { alert('Supabase 연결 필요'); return; }
   try {
     if (editingMemberId) await sb.from('sidiz_members').update(data).eq('id', editingMemberId);
@@ -4361,29 +4432,208 @@ async function saveRetroData() {
 }
 
 function openMemberColumnSettings() {
+  renderColList();
+  document.getElementById('member-col-modal').classList.add('open');
+}
+
+function renderColList() {
   const list = document.getElementById('member-col-list');
   if (!list) return;
-  list.innerHTML = Object.entries(memberColumns)
-    .filter(([k]) => k !== '_check')
+
+  const fixedHTML = Object.entries(memberColumns)
+    .filter(([k]) => k !== '_check' && !memberColumns[k].dynamic)
     .map(([k,v]) => `
-      <div class="toggle-row" style="padding:8px 0;">
-        <div><div class="tgl-label">${v.label}</div></div>
-        <button class="tgl ${v.show?'on':''}" id="col-tgl-${k}" onclick="this.classList.toggle('on')"></button>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);">
+        <span style="flex:1;font-size:13px;font-weight:500;">${v.label}</span>
+        <span style="font-size:11px;color:var(--dim);margin-right:4px;">기본</span>
+        <button class="tgl ${v.show?'on':''}" id="col-tgl-${k}" onclick="this.classList.toggle('on');saveMemberColSettings()"></button>
       </div>`).join('');
-  document.getElementById('member-col-modal').classList.add('open');
+
+  const dynHTML = dynamicColumns.map(col => `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);">
+        <span style="flex:1;font-size:13px;font-weight:500;" id="col-label-display-${col.id}">${col.label}</span>
+        <span style="font-size:10px;color:var(--muted);background:var(--surface2);padding:2px 6px;border-radius:10px;">${{text:'텍스트',boolean:'체크박스',date:'날짜',number:'숫자'}[col.type]||col.type}</span>
+        <button class="tgl ${memberColumns[col.key]?.show?'on':''}" id="col-tgl-${col.key}" onclick="this.classList.toggle('on');saveMemberColSettings()"></button>
+        <button onclick="renameMemberColumn(${col.id},'${col.key}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px;" title="이름 변경">✏️</button>
+        <button onclick="deleteMemberColumn(${col.id},'${col.key}')" style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:13px;padding:2px 4px;" title="삭제">🗑</button>
+      </div>`).join('');
+
+  list.innerHTML = fixedHTML + (dynamicColumns.length ? '<div style="margin:10px 0 6px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;">커스텀 항목</div>' + dynHTML : '');
 }
 
 function saveMemberColSettings() {
   Object.keys(memberColumns).filter(k=>k!=='_check').forEach(k => {
-    memberColumns[k].show = document.getElementById(`col-tgl-${k}`)?.classList.contains('on') || false;
+    const el = document.getElementById(`col-tgl-${k}`);
+    if (el) memberColumns[k].show = el.classList.contains('on');
   });
-  closeModalById('member-col-modal');
   renderMemberTable();
+}
+
+async function addMemberColumn() {
+  const label = document.getElementById('new-col-label').value.trim();
+  const type  = document.getElementById('new-col-type').value;
+  if (!label) { alert('항목 이름을 입력해주세요.'); return; }
+
+  // key 생성 (소문자+언더스코어)
+  const key = 'custom_' + label.replace(/[^a-zA-Z0-9가-힣]/g,'_').toLowerCase() + '_' + Date.now().toString().slice(-4);
+
+  try {
+    // 1. DB 컬럼 추가 (Supabase RPC 또는 직접 INSERT)
+    const maxOrder = dynamicColumns.length ? Math.max(...dynamicColumns.map(c=>c.sort_order)) + 1 : 0;
+    const { data, error } = await sb.from('sidiz_member_columns').insert({ key, label, type, sort_order: maxOrder }).select().single();
+    if (error) throw error;
+
+    // 2. sidiz_members 테이블에 컬럼 추가 (RPC 필요 — 없으면 안내)
+    const { error: alterError } = await sb.rpc('add_member_column', { col_name: key, col_type: type === 'boolean' ? 'text' : type === 'number' ? 'numeric' : 'text' });
+    if (alterError) {
+      // RPC 없으면 안내
+      console.warn('RPC add_member_column 없음 — Supabase SQL로 직접 추가 필요:', alterError.message);
+      alert(`항목 메타데이터는 저장됐어요.
+
+Supabase SQL Editor에서 아래 SQL도 실행해주세요:
+
+ALTER TABLE sidiz_members ADD COLUMN IF NOT EXISTS ${key} TEXT;`);
+    }
+
+    dynamicColumns.push(data);
+    memberColumns[key] = { label, show: true, sortable: false, dynamic: true, colType: type };
+    document.getElementById('new-col-label').value = '';
+    renderColList();
+    renderMemberTable();
+  } catch(e) { alert('추가 실패: ' + e.message); }
+}
+
+async function renameMemberColumn(id, key) {
+  const current = dynamicColumns.find(c=>c.id===id)?.label || '';
+  const newLabel = prompt('새 항목 이름:', current);
+  if (!newLabel || newLabel === current) return;
+  try {
+    await sb.from('sidiz_member_columns').update({ label: newLabel }).eq('id', id);
+    const col = dynamicColumns.find(c=>c.id===id);
+    if (col) col.label = newLabel;
+    if (memberColumns[key]) memberColumns[key].label = newLabel;
+    renderColList();
+    renderMemberTable();
+  } catch(e) { alert('이름 변경 실패: ' + e.message); }
+}
+
+async function deleteMemberColumn(id, key) {
+  if (!confirm(`"${dynamicColumns.find(c=>c.id===id)?.label}" 항목을 삭제할까요?
+해당 항목의 모든 데이터도 함께 삭제됩니다.`)) return;
+  try {
+    await sb.from('sidiz_member_columns').delete().eq('id', id);
+    dynamicColumns = dynamicColumns.filter(c=>c.id!==id);
+    delete memberColumns[key];
+    renderColList();
+    renderMemberTable();
+    alert(`삭제됐어요.
+
+Supabase SQL Editor에서 아래 SQL도 실행해주세요:
+
+ALTER TABLE sidiz_members DROP COLUMN IF EXISTS ${key};`);
+  } catch(e) { alert('삭제 실패: ' + e.message); }
 }
 
 // ══════════════════════════════════════
 // SUPABASE 연동
 // ══════════════════════════════════════
+
+// ── 정답·해설 PDF 다운로드 ──
+function downloadAnswerKeyPDF() {
+  if (!currentDetailItemId) return;
+  const item = items.find(i => i.id === currentDetailItemId);
+  if (!item) return;
+
+  const typeLabel = {
+    multiple:'객관식', ox:'O / X', short:'단답형', essay:'서술형', scale:'척도',
+    checkbox:'체크박스', dropdown:'드롭다운', linear:'선형 배율', star:'등급',
+    grid:'객관식 그리드', checkgrid:'체크박스 그리드', date:'날짜', time:'시간', file:'파일 업로드'
+  };
+
+  const today = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
+
+  let html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #111; font-size: 13px; line-height: 1.7; }
+    .page { max-width: 740px; margin: 0 auto; padding: 48px 40px; }
+    .header { border-bottom: 3px solid #003EFF; padding-bottom: 20px; margin-bottom: 32px; }
+    .header-title { font-size: 22px; font-weight: 700; color: #003EFF; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .header-meta { font-size: 12px; color: #888; }
+    .q-block { margin-bottom: 28px; padding: 20px 22px; border: 1px solid #e8eeff; border-radius: 10px; break-inside: avoid; }
+    .q-block:nth-child(even) { background: #f8faff; }
+    .q-num { display: inline-block; background: #003EFF; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 20px; margin-bottom: 8px; }
+    .q-type { display: inline-block; background: #eef2ff; color: #445588; font-size: 10px; padding: 2px 8px; border-radius: 20px; margin-left: 6px; font-weight: 600; }
+    .q-text { font-size: 14px; font-weight: 600; margin-bottom: 12px; line-height: 1.6; color: #0a1033; }
+    .options { margin-bottom: 12px; }
+    .option-row { display: flex; gap: 8px; align-items: flex-start; padding: 4px 0; font-size: 12.5px; color: #444; }
+    .opt-num { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #ccd4f0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; color: #667; }
+    .opt-num.correct { border-color: #003EFF; background: #003EFF; color: #fff; }
+    .answer-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #dde5ff; }
+    .answer-label { font-size: 11px; font-weight: 700; color: #003EFF; text-transform: uppercase; letter-spacing: 0.5px; }
+    .answer-val { font-size: 13px; font-weight: 600; color: #003EFF; }
+    .explanation { margin-top: 8px; font-size: 12px; color: #556; background: #f0f4ff; border-left: 3px solid #6B8BF6; padding: 8px 12px; border-radius: 0 6px 6px 0; line-height: 1.6; }
+    .essay-note { font-size: 12px; color: #888; font-style: italic; margin-top: 8px; }
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e0e8ff; text-align: center; font-size: 11px; color: #aaa; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .q-block { break-inside: avoid; }
+    }
+  </style></head><body><div class="page">
+  <div class="header">
+    <div class="header-title">${item.title} — 정답 및 해설</div>
+    <div class="header-meta">총 ${item.questions.length}문항 · ${today} 기준</div>
+  </div>`;
+
+  item.questions.forEach((q, i) => {
+    const tLabel = typeLabel[q.type] || q.type;
+    let optionsHTML = '';
+    let answerHTML = '';
+    let explanationHTML = '';
+
+    if (q.type === 'multiple' && q.options) {
+      const correctIdx = parseInt(q.answer);
+      optionsHTML = '<div class="options">' + q.options.map((o, oi) =>
+        `<div class="option-row">
+          <div class="opt-num ${oi === correctIdx ? 'correct' : ''}">${oi + 1}</div>
+          <span>${o}</span>
+        </div>`
+      ).join('') + '</div>';
+      answerHTML = `<div class="answer-row"><span class="answer-label">정답</span><span class="answer-val">${correctIdx + 1}번 — ${q.options[correctIdx] || ''}</span></div>`;
+    } else if (q.type === 'ox') {
+      answerHTML = `<div class="answer-row"><span class="answer-label">정답</span><span class="answer-val">${q.answer}</span></div>`;
+    } else if (q.type === 'short') {
+      answerHTML = `<div class="answer-row"><span class="answer-label">정답</span><span class="answer-val">${q.answer}</span></div>`;
+    } else if (q.type === 'essay') {
+      answerHTML = q.modelAnswer
+        ? `<div class="answer-row"><span class="answer-label">모범 답안</span></div><div class="explanation" style="border-left-color:#94CDEB;">${q.modelAnswer}</div>`
+        : `<div class="essay-note">✎ 서술형 문항 — 관리자 채점</div>`;
+    } else {
+      answerHTML = `<div class="essay-note">${tLabel} 문항</div>`;
+    }
+
+    if (q.explanation) {
+      explanationHTML = `<div class="explanation">💡 ${q.explanation}</div>`;
+    }
+
+    html += `<div class="q-block">
+      <div><span class="q-num">Q${i + 1}</span><span class="q-type">${tLabel}</span></div>
+      <div class="q-text">${q.text.replace(/\n/g, '<br>')}</div>
+      ${optionsHTML}
+      ${answerHTML}
+      ${explanationHTML}
+    </div>`;
+  });
+
+  html += `<div class="footer">TESTIFY — 시디즈 사내 시험 플랫폼 · ${today}</div>
+  </div></body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => win.print(), 500);
+}
 
 // ── 관리자: 시험 목록 로드 ──
 async function loadExamsFromDB() {
