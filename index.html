@@ -4600,6 +4600,27 @@ async function loadResponsesFromDB(examId) {
         month:'2-digit', day:'2-digit',
         hour:'2-digit', minute:'2-digit'
       }).replace('. ', '/').replace('. ', ' ') : '—';
+
+      // answers 키가 옛날 question id일 경우 현재 id로 재매핑
+      const rawAnswers = r.answers || {};
+      let answers = rawAnswers;
+      if (exam?.questions?.length) {
+        const currentIds = exam.questions.map(q => String(q.id));
+        const answerKeys = Object.keys(rawAnswers);
+        const keysMatch = answerKeys.every(k => currentIds.includes(k));
+        if (!keysMatch && answerKeys.length > 0) {
+          // sort_order 순서대로 현재 question id에 매핑
+          const remapped = {};
+          const sortedOldKeys = answerKeys.filter(k => !isNaN(k)).sort((a,b) => Number(a)-Number(b));
+          sortedOldKeys.forEach((oldKey, i) => {
+            if (exam.questions[i]) {
+              remapped[String(exam.questions[i].id)] = rawAnswers[oldKey];
+            }
+          });
+          answers = remapped;
+        }
+      }
+
       return {
         name: r.examinee_name,
         startTime: fmtDT(start),
@@ -4608,7 +4629,7 @@ async function loadResponsesFromDB(examId) {
         score: r.score || 0,
         hasEssay,
         gradingDone: false,
-        answers: r.answers || {},
+        answers,
         tabWarnings: r.tab_warnings || 0,
         id: r.id,
       };
