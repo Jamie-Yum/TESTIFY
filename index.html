@@ -1557,18 +1557,24 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
       <div class="fg"><label class="fl">연락처</label><input class="fi" id="m-phone" placeholder="010-0000-0000"/></div>
     </div>
     <div class="two-col">
+      <div class="fg"><label class="fl">이메일</label><input class="fi" type="email" id="m-email" placeholder="example@sidiz.com"/></div>
+      <div class="fg"><label class="fl">고용형태</label>
+        <select class="fi" id="m-employment">
+          <option value="">선택 안 함</option>
+          <option value="관리직">관리직</option>
+          <option value="정규직">정규직</option>
+          <option value="파트">파트</option>
+        </select>
+      </div>
+    </div>
+    <div class="two-col">
       <div class="fg"><label class="fl">매장</label>
         <input class="fi" id="m-store" placeholder="예: 강남점" list="store-datalist"/>
         <datalist id="store-datalist"></datalist>
       </div>
       <div class="fg"><label class="fl">역할/직급</label><input class="fi" id="m-role" placeholder="예: SE, 매니저"/></div>
     </div>
-    <div class="two-col">
-      <div class="fg"><label class="fl">입사년월일</label><input class="fi" type="date" id="m-hire-date"/></div>
-      <div class="fg"><label class="fl">응대회고노트 수</label>
-        <input class="fi" type="number" id="m-note-count" min="0" placeholder="0"/>
-      </div>
-    </div>
+    <div class="fg"><label class="fl">입사년월일</label><input class="fi" type="date" id="m-hire-date"/></div>
     <div class="fg"><label class="fl">메모</label><textarea class="fi" id="m-memo" rows="2" placeholder="기타 메모"></textarea></div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModalById('member-modal')">취소</button>
@@ -1587,6 +1593,27 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
     <div id="member-col-list" style="display:flex;flex-direction:column;gap:10px;"></div>
     <div class="modal-footer" style="margin-top:20px;">
       <button class="btn btn-accent" onclick="saveMemberColSettings()">적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 응대회고 OX 모달 ══ -->
+<div class="modal-bg" id="retro-modal">
+  <div class="modal" style="width:520px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div class="modal-title" id="retro-modal-name">응대회고 현황</div>
+      <button onclick="closeModalById('retro-modal')" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">25년 월별 응대회고노트 작성 여부 — 클릭해서 O/X 전환</div>
+    <div id="retro-year-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--dim);margin-bottom:10px;">25년</div>
+    <div id="retro-ox-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:20px;"></div>
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface2);border-radius:var(--rs);">
+      <div style="font-size:13px;color:var(--muted);">총 작성 횟수</div>
+      <div id="retro-total" style="font-size:22px;font-weight:700;color:var(--accent);font-family:'DM Serif Display',serif;margin-left:auto;">0개</div>
+    </div>
+    <div class="modal-footer" style="margin-top:16px;">
+      <button class="btn btn-outline" onclick="closeModalById('retro-modal')">닫기</button>
+      <button class="btn btn-accent" onclick="saveRetroData()">저장</button>
     </div>
   </div>
 </div>
@@ -3105,7 +3132,12 @@ function openResponseDetail(itemId, responseIdx) {
 
   const isSurvey = item.mode === 'survey';
   const qs = item.questions;
+  // answers 키가 항상 문자열로 저장되므로 String(q.id)로 조회
   const userAnswers = r.answers || {};
+  const getAns = (q) => {
+    const v = userAnswers[String(q.id)];
+    return v !== undefined ? v : userAnswers[q.id];
+  };
 
   // 헤더
   document.getElementById('detail-modal-name').textContent = r.name + ' — 상세 결과';
@@ -3117,7 +3149,7 @@ function openResponseDetail(itemId, responseIdx) {
   qs.forEach(q => {
     if (q.type === 'essay') { pending++; return; }
     if (isSurvey) { pending++; return; }
-    const ua = String(userAnswers[q.id] ?? '');
+    const ua = String(getAns(q) ?? '');
     const ans = String(q.answer ?? '');
     if (q.type === 'ox') {
       (ua === ans ? correct++ : wrong++);
@@ -3139,27 +3171,32 @@ function openResponseDetail(itemId, responseIdx) {
   // 문항별 결과
   const typeLabel = {multiple:'객관식', ox:'O/X', short:'단답형', essay:'서술형', scale:'척도'};
   document.getElementById('detail-question-list').innerHTML = qs.map((q, i) => {
-    const ua = userAnswers[q.id];
+    const ua = getAns(q);
     let isCorrect = null, myAnsText = '미응답', correctAnsText = '';
 
     if (q.type === 'multiple') {
       const idx = parseInt(ua);
-      myAnsText = ua !== undefined && q.options ? (q.options[idx] ?? '미응답') : '미응답';
+      myAnsText = ua !== undefined && ua !== null && ua !== '' && q.options ? (q.options[idx] ?? '미응답') : '미응답';
       correctAnsText = q.options ? q.options[parseInt(q.answer)] : '';
-      isCorrect = !isSurvey ? String(ua) === String(q.answer) : null;
+      isCorrect = !isSurvey && ua !== undefined && ua !== null && ua !== '' ? String(ua) === String(q.answer) : (ua !== undefined && ua !== null && ua !== '' ? false : null);
     } else if (q.type === 'ox') {
-      myAnsText = ua ?? '미응답';
+      myAnsText = (ua !== undefined && ua !== null && ua !== '') ? ua : '미응답';
       correctAnsText = q.answer;
-      isCorrect = !isSurvey ? ua === q.answer : null;
+      isCorrect = !isSurvey ? (ua === q.answer) : null;
     } else if (q.type === 'short') {
-      myAnsText = ua ?? '미응답';
+      myAnsText = (ua !== undefined && ua !== null && ua !== '') ? ua : '미응답';
       correctAnsText = q.answer;
-      isCorrect = !isSurvey ? (ua||'').toLowerCase().replace(/\s/g,'') === (q.answer||'').toLowerCase().replace(/\s/g,'') : null;
+      isCorrect = !isSurvey ? ((ua||'').toLowerCase().replace(/\s/g,'') === (q.answer||'').toLowerCase().replace(/\s/g,'')) : null;
     } else if (q.type === 'essay') {
-      myAnsText = ua || '(미작성)';
+      myAnsText = (ua !== undefined && ua !== null && ua !== '') ? ua : '(미작성)';
       isCorrect = null;
     } else if (q.type === 'scale') {
-      myAnsText = ua ? ua + '점' : '미응답';
+      myAnsText = (ua !== undefined && ua !== null && ua !== '') ? ua + '점' : '미응답';
+      isCorrect = null;
+    } else {
+      // checkbox, dropdown, linear, star 등 설문 타입
+      if (Array.isArray(ua)) myAnsText = ua.map(i => q.options?.[i] ?? i).join(', ');
+      else if (ua !== undefined && ua !== null && ua !== '') myAnsText = String(ua);
       isCorrect = null;
     }
 
@@ -3958,12 +3995,30 @@ let memberColumns = {
   name:        { label:'이름',      show:true,  sortable:true },
   store:       { label:'매장',      show:true,  sortable:true },
   phone:       { label:'연락처',    show:true,  sortable:false },
+  email:       { label:'이메일',    show:false, sortable:false },
+  employment:  { label:'고용형태',  show:true,  sortable:true },
   role:        { label:'역할/직급', show:true,  sortable:true },
   hire_date:   { label:'입사일',    show:true,  sortable:true },
   tenure:      { label:'근무기간',  show:true,  sortable:true,  computed:true },
-  note_count:  { label:'회고노트',  show:true,  sortable:true },
+  retro_count: { label:'응대회고',  show:true,  sortable:true,  computed:true },
   memo:        { label:'메모',      show:false, sortable:false },
 };
+
+// 응대회고 연도/월 설정 (25년 1월~12월 기본, 필요시 추가)
+// 형식: { year:25, months:[1,2,...12] }
+const RETRO_CONFIG = { year: 25, months: [1,2,3,4,5,6,7,8,9,10,11,12] };
+
+function getRetroKey(year, month) {
+  return `retro_${year}_${String(month).padStart(2,'0')}`;
+}
+
+function calcRetroCount(m) {
+  // retro_keys 배열의 O 합계
+  return RETRO_CONFIG.months.reduce((sum, mo) => {
+    const key = getRetroKey(RETRO_CONFIG.year, mo);
+    return sum + (m[key] === 'O' ? 1 : 0);
+  }, 0);
+}
 let editingMemberId = null;
 
 // 근무기간 계산
@@ -4018,8 +4073,8 @@ function renderMemberTable() {
       (m.role||'').toLowerCase().includes(search);
     const matchStore = !storeF || m.store === storeF;
     const matchNote  = !noteF  ||
-      (noteF==='yes' && (m.note_count||0) > 0) ||
-      (noteF==='no'  && !(m.note_count||0));
+      (noteF==='yes' && calcRetroCount(m) > 0) ||
+      (noteF==='no'  && calcRetroCount(m) === 0);
     return matchS && matchStore && matchNote;
   });
 
@@ -4029,6 +4084,11 @@ function renderMemberTable() {
     if (memberSortKey === 'tenure') {
       av = a.hire_date ? new Date(a.hire_date).getTime() : 0;
       bv = b.hire_date ? new Date(b.hire_date).getTime() : 0;
+      return memberSortAsc ? av - bv : bv - av;
+    }
+    if (memberSortKey === 'retro_count') {
+      av = calcRetroCount(a);
+      bv = calcRetroCount(b);
       return memberSortAsc ? av - bv : bv - av;
     }
     av = av ?? ''; bv = bv ?? '';
@@ -4058,15 +4118,22 @@ function renderMemberTable() {
   tbody.innerHTML = filtered.length
     ? filtered.map(m => {
         const tenureText = calcTenure(m.hire_date);
-        const noteText = m.note_count > 0
-          ? `<span style="color:var(--accent2);font-weight:600;">✓ ${m.note_count}개</span>`
+        const retroCount = calcRetroCount(m);
+        const retroText = retroCount > 0
+          ? `<span style="color:var(--accent2);font-weight:600;">✓ ${retroCount}개</span>`
           : `<span style="color:var(--dim);">—</span>`;
+        const empBadge = m.employment
+          ? { '관리직': `<span style="color:var(--accent);font-size:11px;font-weight:700;">관리직</span>`,
+              '정규직': `<span style="color:var(--accent2);font-size:11px;font-weight:700;">정규직</span>`,
+              '파트':   `<span style="color:var(--muted);font-size:11px;font-weight:700;">파트</span>` }[m.employment] || m.employment
+          : '<span style="color:var(--dim);">—</span>';
         return `<tr>
           ${visibleCols.map(([k]) => {
             if (k==='_check') return `<td><input type="checkbox" class="member-check" data-id="${m.id}"/></td>`;
             if (k==='tenure') return `<td>${tenureText}</td>`;
-            if (k==='note_count') return `<td>${noteText}</td>`;
+            if (k==='retro_count') return `<td style="cursor:pointer;" onclick="openRetroModal('${m.id}')" title="회고 현황 보기/편집">${retroText}</td>`;
             if (k==='hire_date') return `<td>${m.hire_date||'—'}</td>`;
+            if (k==='employment') return `<td>${empBadge}</td>`;
             return `<td>${m[k]??'—'}</td>`;
           }).join('')}
           <td style="display:flex;gap:6px;">
@@ -4108,7 +4175,7 @@ function copySelectedMembers() {
   const header = visibleCols.map(c=>c.label).join('\t');
   const rows = selected.map(m => visibleCols.map(c => {
     if (c.key==='tenure') return calcTenure(m.hire_date);
-    if (c.key==='note_count') return m.note_count > 0 ? `✓ ${m.note_count}개` : '—';
+    if (c.key==='retro_count') return calcRetroCount(m) > 0 ? `✓ ${calcRetroCount(m)}개` : '—';
     return m[c.key] ?? '—';
   }).join('\t'));
 
@@ -4124,7 +4191,7 @@ function exportMembersExcel() {
   const header = visibleCols.map(c => c.label);
   const rows = members.map(m => visibleCols.map(c => {
     if (c.key==='tenure') return calcTenure(m.hire_date);
-    if (c.key==='note_count') return m.note_count || 0;
+    if (c.key==='retro_count') return calcRetroCount(m);
     return m[c.key] ?? '';
   }));
   const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
@@ -4143,8 +4210,9 @@ function importMembersExcel(file) {
     if (!rows.length) { alert('데이터가 없습니다.'); return; }
 
     // 컬럼명 매핑
-    const colMap = { '이름':'name','연락처':'phone','매장':'store','역할':'role','역할/직급':'role',
-      '입사일':'hire_date','입사년월일':'hire_date','메모':'memo','회고노트':'note_count' };
+    const colMap = { '이름':'name','연락처':'phone','이메일':'email','고용형태':'employment',
+      '매장':'store','역할':'role','역할/직급':'role',
+      '입사일':'hire_date','입사년월일':'hire_date','메모':'memo' };
     const toInsert = rows.map(r => {
       const obj = {};
       Object.entries(r).forEach(([k,v]) => {
@@ -4171,8 +4239,10 @@ function importMembersExcel(file) {
 function openAddMember() {
   editingMemberId = null;
   document.getElementById('member-modal-title').textContent = 'SE 추가';
-  ['m-name','m-phone','m-store','m-role','m-hire-date','m-note-count','m-memo']
+  ['m-name','m-phone','m-email','m-store','m-role','m-hire-date','m-memo']
     .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  const empEl = document.getElementById('m-employment');
+  if (empEl) empEl.value = '';
   document.getElementById('member-modal').classList.add('open');
 }
 
@@ -4182,10 +4252,11 @@ function openEditMember(id) {
   document.getElementById('member-modal-title').textContent = 'SE 편집';
   document.getElementById('m-name').value       = m.name || '';
   document.getElementById('m-phone').value      = m.phone || '';
+  document.getElementById('m-email').value      = m.email || '';
+  document.getElementById('m-employment').value = m.employment || '';
   document.getElementById('m-store').value      = m.store || '';
   document.getElementById('m-role').value       = m.role || '';
   document.getElementById('m-hire-date').value  = m.hire_date || '';
-  document.getElementById('m-note-count').value = m.note_count ?? 0;
   document.getElementById('m-memo').value       = m.memo || '';
   document.getElementById('member-modal').classList.add('open');
 }
@@ -4196,10 +4267,11 @@ async function saveMember() {
   const data = {
     name,
     phone:       document.getElementById('m-phone').value.trim() || null,
+    email:       document.getElementById('m-email').value.trim() || null,
+    employment:  document.getElementById('m-employment').value || null,
     store:       document.getElementById('m-store').value.trim() || null,
     role:        document.getElementById('m-role').value.trim() || null,
     hire_date:   document.getElementById('m-hire-date').value || null,
-    note_count:  parseInt(document.getElementById('m-note-count').value) || 0,
     memo:        document.getElementById('m-memo').value.trim() || null,
   };
   if (!window.sb) { alert('Supabase 연결 필요'); return; }
@@ -4218,6 +4290,73 @@ async function deleteMember(id) {
     await sb.from('sidiz_members').delete().eq('id', id);
     await loadMembers();
   } catch(e) { alert('삭제 실패: ' + e.message); }
+}
+
+// ══ 응대회고 OX 모달 ══
+let _retroMemberId = null;
+let _retroData = {}; // { 'retro_25_01': 'O'|'X'|'' }
+
+function openRetroModal(memberId) {
+  const m = members.find(m => m.id === memberId);
+  if (!m) return;
+  _retroMemberId = memberId;
+
+  // 현재 데이터 복사
+  _retroData = {};
+  RETRO_CONFIG.months.forEach(mo => {
+    const key = getRetroKey(RETRO_CONFIG.year, mo);
+    _retroData[key] = m[key] || '';
+  });
+
+  document.getElementById('retro-modal-name').textContent = `${m.name} — 응대회고 현황`;
+  updateRetroGrid();
+  document.getElementById('retro-modal').classList.add('open');
+}
+
+function updateRetroGrid() {
+  const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  let totalO = 0;
+
+  const grid = document.getElementById('retro-ox-grid');
+  grid.innerHTML = RETRO_CONFIG.months.map(mo => {
+    const key = getRetroKey(RETRO_CONFIG.year, mo);
+    const val = _retroData[key] || '';
+    if (val === 'O') totalO++;
+    const isO = val === 'O';
+    const isX = val === 'X';
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
+      <div style="font-size:11px;color:var(--muted);font-weight:600;">${monthNames[mo-1]}</div>
+      <div onclick="toggleRetroOX('${key}')" style="
+        width:44px;height:44px;border-radius:10px;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;
+        font-size:18px;font-weight:700;transition:all .15s;
+        background:${isO ? 'rgba(53,127,255,.15)' : isX ? 'rgba(240,96,144,.1)' : 'var(--surface2)'};
+        border:2px solid ${isO ? 'var(--accent)' : isX ? 'var(--accent3)' : 'var(--border)'};
+        color:${isO ? 'var(--accent)' : isX ? 'var(--accent3)' : 'var(--dim)'};
+      ">${isO ? 'O' : isX ? 'X' : '—'}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('retro-total').textContent = totalO + '개';
+}
+
+function toggleRetroOX(key) {
+  const cur = _retroData[key] || '';
+  // 빈칸 → O → X → 빈칸 순환
+  _retroData[key] = cur === '' ? 'O' : cur === 'O' ? 'X' : '';
+  updateRetroGrid();
+}
+
+async function saveRetroData() {
+  if (!_retroMemberId || !window.sb) return;
+  try {
+    await sb.from('sidiz_members').update(_retroData).eq('id', _retroMemberId);
+    // 로컬 업데이트
+    const m = members.find(m => m.id === _retroMemberId);
+    if (m) Object.assign(m, _retroData);
+    closeModalById('retro-modal');
+    renderMemberTable();
+  } catch(e) { alert('저장 실패: ' + e.message); }
 }
 
 function openMemberColumnSettings() {
