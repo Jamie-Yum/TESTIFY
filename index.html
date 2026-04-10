@@ -1327,6 +1327,7 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
       <div><div class="ph-title">SE 명단 관리</div><div class="ph-sub" id="member-count-sub">Sitting Expert 인원 정보</div></div>
       <div class="flex gap-10" style="flex-wrap:wrap;">
         <button class="btn btn-outline btn-sm" onclick="openMemberColumnSettings()">⚙ 항목 관리</button>
+        <button class="btn btn-outline btn-sm" onclick="openSessionManager()">📋 회고 세션 관리</button>
         <button class="btn btn-outline btn-sm" onclick="copySelectedMembers()">📋 선택 복사</button>
         <button class="btn btn-outline btn-sm" onclick="exportMembersExcel()">📥 엑셀 내보내기</button>
         <button class="btn btn-outline btn-sm" onclick="document.getElementById('member-excel-input').click()">📤 엑셀 업로드</button>
@@ -1620,14 +1621,13 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
 
 <!-- ══ 응대회고 OX 모달 ══ -->
 <div class="modal-bg" id="retro-modal">
-  <div class="modal" style="width:520px;">
+  <div class="modal" style="width:560px;max-height:80vh;overflow-y:auto;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <div class="modal-title" id="retro-modal-name">응대회고 현황</div>
       <button onclick="closeModalById('retro-modal')" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">×</button>
     </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">25년 월별 응대회고노트 작성 여부 — 클릭해서 O/X 전환</div>
-    <div id="retro-year-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--dim);margin-bottom:10px;">25년</div>
-    <div id="retro-ox-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:20px;"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">세션별 응대회고노트 작성 여부 — 클릭해서 O/X 전환</div>
+    <div id="retro-session-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;"></div>
     <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface2);border-radius:var(--rs);">
       <div style="font-size:13px;color:var(--muted);">총 작성 횟수</div>
       <div id="retro-total" style="font-size:22px;font-weight:700;color:var(--accent);font-family:'DM Serif Display',serif;margin-left:auto;">0개</div>
@@ -1635,6 +1635,29 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
     <div class="modal-footer" style="margin-top:16px;">
       <button class="btn btn-outline" onclick="closeModalById('retro-modal')">닫기</button>
       <button class="btn btn-accent" onclick="saveRetroData()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 회고 세션 관리 모달 ══ -->
+<div class="modal-bg" id="session-manager-modal">
+  <div class="modal" style="width:420px;max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div class="modal-title">회고 세션 관리</div>
+      <button onclick="closeModalById('session-manager-modal')" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">×</button>
+    </div>
+    <!-- 새 세션 추가 -->
+    <div style="background:var(--surface2);border-radius:var(--rs);padding:14px 16px;margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;">새 세션 추가</div>
+      <div style="display:flex;gap:8px;">
+        <input class="fi fi-sm" id="new-session-label" placeholder="예: 25년 3월 1차" style="flex:1;" onkeydown="if(event.key==='Enter')addReflectionSession()"/>
+        <button class="btn btn-accent btn-sm" onclick="addReflectionSession()">추가</button>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;">세션 목록</div>
+    <div id="session-list-wrap" style="display:flex;flex-direction:column;gap:6px;"></div>
+    <div class="modal-footer" style="margin-top:20px;">
+      <button class="btn btn-outline" onclick="closeModalById('session-manager-modal')">닫기</button>
     </div>
   </div>
 </div>
@@ -4034,21 +4057,7 @@ let dynamicColumns = []; // [{ id, key, label, type, sort_order }]
 
 const FIXED_COLS = ['_check','name','store','phone','email','employment','role','hire_date','tenure','retro_count','memo'];
 
-// 응대회고 연도/월 설정 (25년 1월~12월 기본, 필요시 추가)
-// 형식: { year:25, months:[1,2,...12] }
-const RETRO_CONFIG = { year: 25, months: [1,2,3,4,5,6,7,8,9,10,11,12] };
-
-function getRetroKey(year, month) {
-  return `retro_${year}_${String(month).padStart(2,'0')}`;
-}
-
-function calcRetroCount(m) {
-  // retro_keys 배열의 O 합계
-  return RETRO_CONFIG.months.reduce((sum, mo) => {
-    const key = getRetroKey(RETRO_CONFIG.year, mo);
-    return sum + (m[key] === 'O' ? 1 : 0);
-  }, 0);
-}
+// 응대회고는 sidiz_reflections 테이블 기반으로 관리됨
 let editingMemberId = null;
 
 // 근무기간 계산
@@ -4069,13 +4078,15 @@ async function loadMembers() {
     const { data: colData } = await sb.from('sidiz_member_columns').select('*').order('sort_order');
     if (colData) {
       dynamicColumns = colData;
-      // memberColumns에 동적 컬럼 반영
       dynamicColumns.forEach(col => {
         if (!FIXED_COLS.includes(col.key)) {
           memberColumns[col.key] = { label: col.label, show: true, sortable: false, dynamic: true, colType: col.type };
         }
       });
     }
+
+    // 세션 + 회고 데이터 병렬 로드
+    await Promise.all([loadReflectionSessions(), loadAllReflections()]);
 
     const { data, error } = await sb.from('sidiz_members').select('*').order('created_at', { ascending: true });
     if (error) { console.warn('명단 로드 오류:', error.message); return; }
@@ -4364,72 +4375,175 @@ async function deleteMember(id) {
   } catch(e) { alert('삭제 실패: ' + e.message); }
 }
 
-// ══ 응대회고 OX 모달 ══
+// ══ 응대회고 — 세션 기반 ══
 let _retroMemberId = null;
-let _retroData = {}; // { 'retro_25_01': 'O'|'X'|'' }
+let _retroSessionData = {}; // { session_id: done(bool) }
+let reflectionSessions = []; // 전체 세션 목록
+let allReflections = {};     // { member_id: { session_id: done } }
 
-function openRetroModal(memberId) {
+// 세션 목록 로드
+async function loadReflectionSessions() {
+  if (!window.sb) return;
+  try {
+    const { data } = await sb.from('sidiz_reflection_sessions').select('*').order('sort_order');
+    reflectionSessions = data || [];
+  } catch(e) { console.warn('세션 로드 실패:', e.message); }
+}
+
+// 전체 회고 데이터 로드 (명단 로드 시 함께)
+async function loadAllReflections() {
+  if (!window.sb) return;
+  try {
+    const { data } = await sb.from('sidiz_reflections').select('*');
+    allReflections = {};
+    (data || []).forEach(r => {
+      if (!allReflections[r.member_id]) allReflections[r.member_id] = {};
+      allReflections[r.member_id][r.session_id] = r.done;
+    });
+  } catch(e) { console.warn('회고 데이터 로드 실패:', e.message); }
+}
+
+function calcRetroCount(m) {
+  const mData = allReflections[m.id] || {};
+  return Object.values(mData).filter(v => v === true).length;
+}
+
+async function openRetroModal(memberId) {
   const m = members.find(m => m.id === memberId);
   if (!m) return;
   _retroMemberId = memberId;
+  _retroSessionData = {};
 
-  // 현재 데이터 복사
-  _retroData = {};
-  RETRO_CONFIG.months.forEach(mo => {
-    const key = getRetroKey(RETRO_CONFIG.year, mo);
-    _retroData[key] = m[key] || '';
+  // 현재 멤버 회고 데이터 복사
+  const mData = allReflections[memberId] || {};
+  reflectionSessions.forEach(s => {
+    _retroSessionData[s.id] = mData[s.id] || false;
   });
 
   document.getElementById('retro-modal-name').textContent = `${m.name} — 응대회고 현황`;
-  updateRetroGrid();
+  renderRetroSessionList();
   document.getElementById('retro-modal').classList.add('open');
 }
 
-function updateRetroGrid() {
-  const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
-  let totalO = 0;
+function renderRetroSessionList() {
+  const wrap = document.getElementById('retro-session-list');
+  if (!wrap) return;
 
-  const grid = document.getElementById('retro-ox-grid');
-  grid.innerHTML = RETRO_CONFIG.months.map(mo => {
-    const key = getRetroKey(RETRO_CONFIG.year, mo);
-    const val = _retroData[key] || '';
-    if (val === 'O') totalO++;
-    const isO = val === 'O';
-    const isX = val === 'X';
-    return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
-      <div style="font-size:11px;color:var(--muted);font-weight:600;">${monthNames[mo-1]}</div>
-      <div onclick="toggleRetroOX('${key}')" style="
-        width:44px;height:44px;border-radius:10px;cursor:pointer;
-        display:flex;align-items:center;justify-content:center;
-        font-size:18px;font-weight:700;transition:all .15s;
-        background:${isO ? 'rgba(53,127,255,.15)' : isX ? 'rgba(240,96,144,.1)' : 'var(--surface2)'};
-        border:2px solid ${isO ? 'var(--accent)' : isX ? 'var(--accent3)' : 'var(--border)'};
-        color:${isO ? 'var(--accent)' : isX ? 'var(--accent3)' : 'var(--dim)'};
-      ">${isO ? 'O' : isX ? 'X' : '—'}</div>
+  if (!reflectionSessions.length) {
+    wrap.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">
+      세션이 없습니다.<br><span style="font-size:12px;">"회고 세션 관리"에서 세션을 추가해주세요.</span>
+    </div>`;
+    document.getElementById('retro-total').textContent = '0개';
+    return;
+  }
+
+  let total = 0;
+  wrap.innerHTML = reflectionSessions.map(s => {
+    const done = _retroSessionData[s.id] || false;
+    if (done) total++;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border:1px solid ${done ? 'var(--accent)' : 'var(--border)'};border-radius:var(--rs);cursor:pointer;transition:all .15s;"
+      onclick="toggleRetroSession(${s.id})">
+      <div style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;
+        background:${done ? 'rgba(53,127,255,.15)' : 'var(--surface2)'};
+        border:2px solid ${done ? 'var(--accent)' : 'var(--border)'};
+        color:${done ? 'var(--accent)' : 'var(--dim)'};">
+        ${done ? 'O' : '—'}
+      </div>
+      <span style="flex:1;font-size:13px;font-weight:${done ? '600' : '400'};color:${done ? 'var(--text)' : 'var(--muted)'};">${s.label}</span>
+      ${done ? '<span style="font-size:11px;color:var(--accent);font-weight:700;">작성 완료</span>' : '<span style="font-size:11px;color:var(--dim);">미작성</span>'}
     </div>`;
   }).join('');
 
-  document.getElementById('retro-total').textContent = totalO + '개';
+  document.getElementById('retro-total').textContent = total + '개';
 }
 
-function toggleRetroOX(key) {
-  const cur = _retroData[key] || '';
-  // 빈칸 → O → X → 빈칸 순환
-  _retroData[key] = cur === '' ? 'O' : cur === 'O' ? 'X' : '';
-  updateRetroGrid();
+function toggleRetroSession(sessionId) {
+  _retroSessionData[sessionId] = !_retroSessionData[sessionId];
+  renderRetroSessionList();
 }
 
 async function saveRetroData() {
   if (!_retroMemberId || !window.sb) return;
   try {
-    await sb.from('sidiz_members').update(_retroData).eq('id', _retroMemberId);
-    // 로컬 업데이트
-    const m = members.find(m => m.id === _retroMemberId);
-    if (m) Object.assign(m, _retroData);
+    // upsert 방식으로 저장
+    const upsertData = reflectionSessions.map(s => ({
+      member_id: _retroMemberId,
+      session_id: s.id,
+      done: _retroSessionData[s.id] || false,
+      updated_at: new Date().toISOString(),
+    }));
+    await sb.from('sidiz_reflections').upsert(upsertData, { onConflict: 'member_id,session_id' });
+
+    // 로컬 캐시 업데이트
+    if (!allReflections[_retroMemberId]) allReflections[_retroMemberId] = {};
+    reflectionSessions.forEach(s => {
+      allReflections[_retroMemberId][s.id] = _retroSessionData[s.id] || false;
+    });
     closeModalById('retro-modal');
     renderMemberTable();
   } catch(e) { alert('저장 실패: ' + e.message); }
 }
+
+// ══ 회고 세션 관리 ══
+async function openSessionManager() {
+  await loadReflectionSessions();
+  renderSessionList();
+  document.getElementById('session-manager-modal').classList.add('open');
+}
+
+function renderSessionList() {
+  const wrap = document.getElementById('session-list-wrap');
+  if (!wrap) return;
+  if (!reflectionSessions.length) {
+    wrap.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">세션이 없습니다.</div>';
+    return;
+  }
+  wrap.innerHTML = reflectionSessions.map(s => `
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);">
+      <span style="flex:1;font-size:13px;font-weight:500;">${s.label}</span>
+      <button onclick="renameSession(${s.id})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px;" title="이름 변경">✏️</button>
+      <button onclick="deleteSession(${s.id})" style="background:none;border:none;color:var(--accent3);cursor:pointer;font-size:13px;padding:2px 4px;" title="삭제">🗑</button>
+    </div>`).join('');
+}
+
+async function addReflectionSession() {
+  const label = document.getElementById('new-session-label').value.trim();
+  if (!label) { alert('세션 이름을 입력해주세요.'); return; }
+  const maxOrder = reflectionSessions.length ? Math.max(...reflectionSessions.map(s=>s.sort_order)) + 1 : 0;
+  try {
+    const { data, error } = await sb.from('sidiz_reflection_sessions').insert({ label, sort_order: maxOrder }).select().single();
+    if (error) throw error;
+    reflectionSessions.push(data);
+    document.getElementById('new-session-label').value = '';
+    renderSessionList();
+  } catch(e) { alert('추가 실패: ' + e.message); }
+}
+
+async function renameSession(id) {
+  const s = reflectionSessions.find(s=>s.id===id);
+  const newLabel = prompt('새 세션 이름:', s?.label || '');
+  if (!newLabel || newLabel === s?.label) return;
+  try {
+    await sb.from('sidiz_reflection_sessions').update({ label: newLabel }).eq('id', id);
+    if (s) s.label = newLabel;
+    renderSessionList();
+  } catch(e) { alert('변경 실패: ' + e.message); }
+}
+
+async function deleteSession(id) {
+  const s = reflectionSessions.find(s=>s.id===id);
+  if (!confirm(`"${s?.label}" 세션을 삭제할까요?\n해당 세션의 모든 회고 기록도 함께 삭제됩니다.`)) return;
+  try {
+    await sb.from('sidiz_reflection_sessions').delete().eq('id', id);
+    reflectionSessions = reflectionSessions.filter(s=>s.id!==id);
+    Object.keys(allReflections).forEach(mid => {
+      if (allReflections[mid][id] !== undefined) delete allReflections[mid][id];
+    });
+    renderSessionList();
+    renderMemberTable();
+  } catch(e) { alert('삭제 실패: ' + e.message); }
+}
+
 
 function openMemberColumnSettings() {
   renderColList();
