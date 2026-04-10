@@ -1025,6 +1025,9 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
     <div class="nav-section">결과</div>
     <div class="nav-item" data-panel="results"><span class="nav-icon">◉</span>결과 & 진도</div>
 
+    <div class="nav-section">인원 관리</div>
+    <div class="nav-item" data-panel="members"><span class="nav-icon">👥</span>SE 명단</div>
+
     <div class="sb-footer">
       <div class="sb-back" onclick="goLanding()">← 메인으로</div>
     </div>
@@ -1103,9 +1106,9 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
         <div style="flex:1;">
           <input id="editor-title-input" class="fi" style="font-size:20px;font-weight:700;letter-spacing:-.5px;background:transparent;border-color:transparent;padding:4px 8px;width:100%;max-width:480px;" placeholder="제목을 입력하세요" oninput="onEditorTitleInput(this.value)" />
         </div>
-        <div class="flex gap-10" style="align-self:flex-start;">
-          <button class="btn btn-outline" onclick="saveItem(true)">임시저장</button>
-          <button class="btn btn-accent" id="btn-deploy" onclick="saveItem(false)">저장 & 배포</button>
+        <div class="flex gap-10" style="align-self:flex-start;align-items:center;">
+          <span id="autosave-indicator" style="font-size:12px;color:var(--dim);"></span>
+          <button class="btn btn-accent" id="btn-deploy" onclick="saveItem()">저장 & 배포</button>
         </div>
       </div>
       <div class="etabs">
@@ -1315,6 +1318,47 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
   </main>
 </div>
 
+<!-- ── SE 명단 관리 패널 (main 안에 삽입) ── -->
+<script>
+document.querySelector('.main').insertAdjacentHTML('beforeend', `
+  <div id="panel-members" class="panel">
+    <div class="ph">
+      <div><div class="ph-title">SE 명단 관리</div><div class="ph-sub" id="member-count-sub">Sitting Expert 인원 정보</div></div>
+      <div class="flex gap-10" style="flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="openMemberColumnSettings()">⚙ 항목 설정</button>
+        <button class="btn btn-outline btn-sm" onclick="copySelectedMembers()">📋 선택 복사</button>
+        <button class="btn btn-outline btn-sm" onclick="exportMembersExcel()">📥 엑셀 내보내기</button>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('member-excel-input').click()">📤 엑셀 업로드</button>
+        <input type="file" id="member-excel-input" accept=".xlsx" style="display:none;" onchange="importMembersExcel(this.files[0])"/>
+        <button class="btn btn-accent btn-sm" onclick="openAddMember()">＋ SE 추가</button>
+      </div>
+    </div>
+
+    <!-- 검색 / 필터 -->
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+      <input class="fi" id="member-search" placeholder="이름·매장·역할 검색..." style="flex:1;min-width:160px;" oninput="renderMemberTable()"/>
+      <select class="fi" id="member-store-filter" style="width:150px;" onchange="renderMemberTable()">
+        <option value="">전체 매장</option>
+      </select>
+      <select class="fi" id="member-note-filter" style="width:130px;" onchange="renderMemberTable()">
+        <option value="">노트 전체</option>
+        <option value="yes">노트 있음</option>
+        <option value="no">노트 없음</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="clearMemberFilters()">초기화</button>
+    </div>
+
+    <!-- 테이블 -->
+    <div class="rtable-wrap" id="member-table-wrap">
+      <table class="rtable" id="member-table">
+        <thead id="member-thead"></thead>
+        <tbody id="member-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+`);
+</script>
+
 <!-- ══ ADMIN PREVIEW BANNER ══ -->
 <div id="preview-banner" class="preview-banner">
   <div class="preview-banner-left">
@@ -1353,7 +1397,11 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
       시험 시작 후 다른 탭으로 이동하거나 뒤로 가기 시 자동으로 기록됩니다. 시간이 초과되면 즉시 제출됩니다.
     </div>
     <hr class="divider">
-    <div class="fg" id="name-group"><label class="fl">이름</label><input class="intro-fi" id="inp-name" placeholder="홍길동" /></div>
+    <div class="fg" id="name-group">
+      <label class="fl">이름</label>
+      <input class="intro-fi" id="inp-name" placeholder="홍길동" list="member-name-datalist"/>
+      <datalist id="member-name-datalist"></datalist>
+    </div>
     <div class="fg" id="pw-group">
       <label class="fl">응시 비밀번호</label>
       <input class="intro-fi" type="text" id="inp-pw" placeholder="관리자에게 받은 비밀번호" onkeydown="if(event.key==='Enter')startExam()" />
@@ -1493,6 +1541,52 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
     <div style="display:flex;gap:8px;">
       <button class="btn btn-outline" style="flex:1;" onclick="closeModalById('qr-modal')">닫기</button>
       <button class="btn btn-accent" style="flex:1;" onclick="downloadQR()">이미지 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SE 추가/편집 모달 ══ -->
+<div class="modal-bg" id="member-modal">
+  <div class="modal" style="width:520px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div class="modal-title" id="member-modal-title">SE 추가</div>
+      <button onclick="closeModalById('member-modal')" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">×</button>
+    </div>
+    <div class="two-col">
+      <div class="fg"><label class="fl">이름 *</label><input class="fi" id="m-name" placeholder="홍길동"/></div>
+      <div class="fg"><label class="fl">연락처</label><input class="fi" id="m-phone" placeholder="010-0000-0000"/></div>
+    </div>
+    <div class="two-col">
+      <div class="fg"><label class="fl">매장</label>
+        <input class="fi" id="m-store" placeholder="예: 강남점" list="store-datalist"/>
+        <datalist id="store-datalist"></datalist>
+      </div>
+      <div class="fg"><label class="fl">역할/직급</label><input class="fi" id="m-role" placeholder="예: SE, 매니저"/></div>
+    </div>
+    <div class="two-col">
+      <div class="fg"><label class="fl">입사년월일</label><input class="fi" type="date" id="m-hire-date"/></div>
+      <div class="fg"><label class="fl">응대회고노트 수</label>
+        <input class="fi" type="number" id="m-note-count" min="0" placeholder="0"/>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">메모</label><textarea class="fi" id="m-memo" rows="2" placeholder="기타 메모"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModalById('member-modal')">취소</button>
+      <button class="btn btn-accent" onclick="saveMember()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 컬럼 설정 모달 ══ -->
+<div class="modal-bg" id="member-col-modal">
+  <div class="modal" style="width:360px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div class="modal-title">표시 항목 설정</div>
+      <button onclick="closeModalById('member-col-modal')" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">×</button>
+    </div>
+    <div id="member-col-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+    <div class="modal-footer" style="margin-top:20px;">
+      <button class="btn btn-accent" onclick="saveMemberColSettings()">적용</button>
     </div>
   </div>
 </div>
@@ -1779,11 +1873,12 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(el => {
 function nav(panel, pushHistory = true) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('panel-' + panel).classList.add('active');
+  document.getElementById('panel-' + panel)?.classList.add('active');
   document.querySelector(`.nav-item[data-panel="${panel}"]`)?.classList.add('active');
   if (['dashboard','exam-list','survey-list'].includes(panel)) renderAll();
   if (panel === 'results') { showResultsList(); renderResultsList(); }
   if (panel === 'editor' && !currentId) openNewModal('exam');
+  if (panel === 'members') loadMembers();
 
   if (pushHistory) {
     history.pushState({ view: 'admin', panel }, '', '');
@@ -2038,7 +2133,7 @@ function setEditorMode(mode) {
 
 function getCurrent() { return items.find(i=>i.id===currentId); }
 
-function saveItem(draft) {
+function saveItem() {
   const item = getCurrent();
   if (!item) return;
   item.title = document.getElementById('editor-title-input').value || '제목 없음';
@@ -2050,18 +2145,32 @@ function saveItem(draft) {
   item.retake     = document.getElementById('tgl-retake').classList.contains('on');
   item.shuffleOpts= document.getElementById('tgl-shuffle').classList.contains('on');
   item.shuffleQ   = document.getElementById('tgl-qshuffle').classList.contains('on');
-  item.status = draft ? 'draft' : 'live';
+  item.status = 'live';
   item.openAt    = document.getElementById('f-open-at').value || '';
   item.closeAt   = document.getElementById('f-close-at').value || '';
   item.lockedMsg = document.getElementById('f-locked-msg').value.trim();
   const rosterRaw = document.getElementById('f-roster').value;
   item.roster = rosterRaw.split('\n').map(s => s.trim()).filter(Boolean);
-  // 감사 메시지 (설문 전용)
   item.thankMsg = document.getElementById('f-thank-msg').value.trim();
   save();
   updateSharePanel(item);
   saveItemToDB(item);
-  alert(draft ? '임시저장 완료!' : '배포 완료! 링크를 공유하세요.');
+  alert('저장 & 배포 완료! 링크를 공유하세요.');
+}
+
+// 자동저장 (편집 중 5초마다)
+let _autoSaveTimer = null;
+function triggerAutoSave() {
+  const item = getCurrent(); if (!item) return;
+  item.title = document.getElementById('editor-title-input')?.value || item.title;
+  save();
+  const ind = document.getElementById('autosave-indicator');
+  if (ind) { ind.textContent = '저장 중...'; }
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(() => {
+    saveItemToDB(item);
+    if (ind) { ind.textContent = '✓ 자동저장됨'; setTimeout(()=>{ if(ind) ind.textContent=''; }, 2000); }
+  }, 1500);
 }
 
 function askDelete(id) {
@@ -3839,6 +3948,300 @@ function showResult(score,ok,ng,pend,itemList,isSurvey) {
 }
 
 // ══════════════════════════════════════
+// SE 명단 관리
+// ══════════════════════════════════════
+let members = [];
+let memberSortKey = 'name';
+let memberSortAsc = true;
+let memberColumns = {
+  _check:      { label:'',          show:true,  sortable:false },
+  name:        { label:'이름',      show:true,  sortable:true },
+  store:       { label:'매장',      show:true,  sortable:true },
+  phone:       { label:'연락처',    show:true,  sortable:false },
+  role:        { label:'역할/직급', show:true,  sortable:true },
+  hire_date:   { label:'입사일',    show:true,  sortable:true },
+  tenure:      { label:'근무기간',  show:true,  sortable:true,  computed:true },
+  note_count:  { label:'회고노트',  show:true,  sortable:true },
+  memo:        { label:'메모',      show:false, sortable:false },
+};
+let editingMemberId = null;
+
+// 근무기간 계산
+function calcTenure(hireDate) {
+  if (!hireDate) return '—';
+  const hire = new Date(hireDate);
+  const now = new Date();
+  let y = now.getFullYear() - hire.getFullYear();
+  let m = now.getMonth() - hire.getMonth();
+  if (m < 0) { y--; m += 12; }
+  return y > 0 ? `${y}년 ${m}개월` : `${m}개월`;
+}
+
+async function loadMembers() {
+  if (!window.sb) return;
+  try {
+    const { data, error } = await sb.from('sidiz_members').select('*').order('created_at', { ascending: true });
+    if (error) { console.warn('명단 로드 오류:', error.message); return; }
+    members = data || [];
+    renderMemberTable();
+    updateStoreFilter();
+    updateMemberDatalist();
+  } catch(e) { console.warn('명단 로드 실패:', e.message); }
+}
+
+function updateStoreFilter() {
+  const stores = [...new Set(members.map(m => m.store).filter(Boolean))].sort();
+  const sel = document.getElementById('member-store-filter');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">전체 매장</option>' +
+    stores.map(s => `<option value="${s}" ${cur===s?'selected':''}>${s}</option>`).join('');
+  const dl = document.getElementById('store-datalist');
+  if (dl) dl.innerHTML = stores.map(s=>`<option value="${s}">`).join('');
+}
+
+function updateMemberDatalist() {
+  // 응시자 이름 입력 자동완성
+  const dl = document.getElementById('member-name-datalist');
+  if (dl) dl.innerHTML = members.map(m=>`<option value="${m.name}">`).join('');
+}
+
+function renderMemberTable() {
+  const search = (document.getElementById('member-search')?.value || '').toLowerCase();
+  const storeF = document.getElementById('member-store-filter')?.value || '';
+  const noteF  = document.getElementById('member-note-filter')?.value || '';
+
+  let filtered = members.filter(m => {
+    const matchS = !search ||
+      (m.name||'').toLowerCase().includes(search) ||
+      (m.store||'').toLowerCase().includes(search) ||
+      (m.role||'').toLowerCase().includes(search);
+    const matchStore = !storeF || m.store === storeF;
+    const matchNote  = !noteF  ||
+      (noteF==='yes' && (m.note_count||0) > 0) ||
+      (noteF==='no'  && !(m.note_count||0));
+    return matchS && matchStore && matchNote;
+  });
+
+  // 정렬
+  filtered.sort((a, b) => {
+    let av = a[memberSortKey], bv = b[memberSortKey];
+    if (memberSortKey === 'tenure') {
+      av = a.hire_date ? new Date(a.hire_date).getTime() : 0;
+      bv = b.hire_date ? new Date(b.hire_date).getTime() : 0;
+      return memberSortAsc ? av - bv : bv - av;
+    }
+    av = av ?? ''; bv = bv ?? '';
+    if (typeof av === 'string') av = av.toLowerCase();
+    if (typeof bv === 'string') bv = bv.toLowerCase();
+    return memberSortAsc
+      ? (av < bv ? -1 : av > bv ? 1 : 0)
+      : (bv < av ? -1 : bv > av ? 1 : 0);
+  });
+
+  const thead = document.getElementById('member-thead');
+  const tbody = document.getElementById('member-tbody');
+  const sub   = document.getElementById('member-count-sub');
+  if (!thead || !tbody) return;
+  if (sub) sub.textContent = `전체 ${members.length}명 / 표시 ${filtered.length}명`;
+
+  const visibleCols = Object.entries(memberColumns).filter(([,v])=>v.show);
+
+  // 헤더
+  thead.innerHTML = `<tr>${visibleCols.map(([k,v]) => {
+    if (k === '_check') return `<th style="width:32px;"><input type="checkbox" id="member-check-all" onclick="toggleAllMemberCheck(this)"/></th>`;
+    const arrow = v.sortable ? (memberSortKey===k ? (memberSortAsc?'↑':'↓') : '↕') : '';
+    return `<th style="${v.sortable?'cursor:pointer;user-select:none;':''}" onclick="${v.sortable?`sortMembers('${k}')`:''}">${v.label} <span style="color:var(--dim);font-size:10px;">${arrow}</span></th>`;
+  }).join('')}<th>관리</th></tr>`;
+
+  // 바디
+  tbody.innerHTML = filtered.length
+    ? filtered.map(m => {
+        const tenureText = calcTenure(m.hire_date);
+        const noteText = m.note_count > 0
+          ? `<span style="color:var(--accent2);font-weight:600;">✓ ${m.note_count}개</span>`
+          : `<span style="color:var(--dim);">—</span>`;
+        return `<tr>
+          ${visibleCols.map(([k]) => {
+            if (k==='_check') return `<td><input type="checkbox" class="member-check" data-id="${m.id}"/></td>`;
+            if (k==='tenure') return `<td>${tenureText}</td>`;
+            if (k==='note_count') return `<td>${noteText}</td>`;
+            if (k==='hire_date') return `<td>${m.hire_date||'—'}</td>`;
+            return `<td>${m[k]??'—'}</td>`;
+          }).join('')}
+          <td style="display:flex;gap:6px;">
+            <button class="btn btn-xs btn-outline" onclick="openEditMember('${m.id}')">편집</button>
+            <button class="btn-del-record" onclick="deleteMember('${m.id}')" title="삭제">🗑</button>
+          </td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="${visibleCols.length+1}" style="text-align:center;color:var(--muted);padding:32px;">
+        <div style="font-size:24px;margin-bottom:8px;">👥</div>등록된 SE가 없습니다.</td></tr>`;
+}
+
+function sortMembers(key) {
+  if (memberSortKey === key) memberSortAsc = !memberSortAsc;
+  else { memberSortKey = key; memberSortAsc = true; }
+  renderMemberTable();
+}
+
+function toggleAllMemberCheck(el) {
+  document.querySelectorAll('.member-check').forEach(c => c.checked = el.checked);
+}
+
+function clearMemberFilters() {
+  document.getElementById('member-search').value = '';
+  document.getElementById('member-store-filter').value = '';
+  document.getElementById('member-note-filter').value = '';
+  renderMemberTable();
+}
+
+function copySelectedMembers() {
+  const checked = [...document.querySelectorAll('.member-check:checked')];
+  if (!checked.length) { alert('복사할 SE를 선택해주세요.'); return; }
+  const ids = checked.map(c => c.dataset.id);
+  const selected = members.filter(m => ids.includes(m.id));
+  const visibleCols = Object.entries(memberColumns)
+    .filter(([k,v]) => v.show && k !== '_check')
+    .map(([k,v]) => ({ key:k, label:v.label }));
+
+  const header = visibleCols.map(c=>c.label).join('\t');
+  const rows = selected.map(m => visibleCols.map(c => {
+    if (c.key==='tenure') return calcTenure(m.hire_date);
+    if (c.key==='note_count') return m.note_count > 0 ? `✓ ${m.note_count}개` : '—';
+    return m[c.key] ?? '—';
+  }).join('\t'));
+
+  navigator.clipboard.writeText([header,...rows].join('\n'))
+    .then(() => alert(`${selected.length}명의 정보가 복사되었습니다.`))
+    .catch(() => alert('복사 실패 — 브라우저 권한을 확인해주세요.'));
+}
+
+function exportMembersExcel() {
+  const visibleCols = Object.entries(memberColumns)
+    .filter(([k,v]) => v.show && k !== '_check')
+    .map(([k,v]) => ({ key:k, label:v.label }));
+  const header = visibleCols.map(c => c.label);
+  const rows = members.map(m => visibleCols.map(c => {
+    if (c.key==='tenure') return calcTenure(m.hire_date);
+    if (c.key==='note_count') return m.note_count || 0;
+    return m[c.key] ?? '';
+  }));
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'SE명단');
+  XLSX.writeFile(wb, `SE_명단_${new Date().toLocaleDateString('ko-KR').replace(/\./g,'').replace(/ /g,'')}.xlsx`);
+}
+
+function importMembersExcel(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const wb = XLSX.read(ev.target.result, { type:'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
+    if (!rows.length) { alert('데이터가 없습니다.'); return; }
+
+    // 컬럼명 매핑
+    const colMap = { '이름':'name','연락처':'phone','매장':'store','역할':'role','역할/직급':'role',
+      '입사일':'hire_date','입사년월일':'hire_date','메모':'memo','회고노트':'note_count' };
+    const toInsert = rows.map(r => {
+      const obj = {};
+      Object.entries(r).forEach(([k,v]) => {
+        const mapped = colMap[k.trim()];
+        if (mapped) obj[mapped] = v || null;
+      });
+      return obj;
+    }).filter(o => o.name);
+
+    if (!toInsert.length) { alert('이름 컬럼이 없습니다. 컬럼명을 확인해주세요.'); return; }
+    if (!confirm(`${toInsert.length}명을 추가하시겠습니까?`)) return;
+
+    try {
+      await sb.from('sidiz_members').insert(toInsert);
+      await loadMembers();
+      alert(`${toInsert.length}명 추가 완료!`);
+    } catch(e) { alert('업로드 실패: ' + e.message); }
+  };
+  reader.readAsArrayBuffer(file);
+  // 파일 초기화 (같은 파일 재업로드 허용)
+  document.getElementById('member-excel-input').value = '';
+}
+
+function openAddMember() {
+  editingMemberId = null;
+  document.getElementById('member-modal-title').textContent = 'SE 추가';
+  ['m-name','m-phone','m-store','m-role','m-hire-date','m-note-count','m-memo']
+    .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('member-modal').classList.add('open');
+}
+
+function openEditMember(id) {
+  const m = members.find(m => m.id === id); if (!m) return;
+  editingMemberId = id;
+  document.getElementById('member-modal-title').textContent = 'SE 편집';
+  document.getElementById('m-name').value       = m.name || '';
+  document.getElementById('m-phone').value      = m.phone || '';
+  document.getElementById('m-store').value      = m.store || '';
+  document.getElementById('m-role').value       = m.role || '';
+  document.getElementById('m-hire-date').value  = m.hire_date || '';
+  document.getElementById('m-note-count').value = m.note_count ?? 0;
+  document.getElementById('m-memo').value       = m.memo || '';
+  document.getElementById('member-modal').classList.add('open');
+}
+
+async function saveMember() {
+  const name = document.getElementById('m-name').value.trim();
+  if (!name) { alert('이름을 입력해주세요.'); return; }
+  const data = {
+    name,
+    phone:       document.getElementById('m-phone').value.trim() || null,
+    store:       document.getElementById('m-store').value.trim() || null,
+    role:        document.getElementById('m-role').value.trim() || null,
+    hire_date:   document.getElementById('m-hire-date').value || null,
+    note_count:  parseInt(document.getElementById('m-note-count').value) || 0,
+    memo:        document.getElementById('m-memo').value.trim() || null,
+  };
+  if (!window.sb) { alert('Supabase 연결 필요'); return; }
+  try {
+    if (editingMemberId) await sb.from('sidiz_members').update(data).eq('id', editingMemberId);
+    else await sb.from('sidiz_members').insert(data);
+    closeModalById('member-modal');
+    await loadMembers();
+  } catch(e) { alert('저장 실패: ' + e.message); }
+}
+
+async function deleteMember(id) {
+  if (!confirm('이 SE를 삭제할까요?')) return;
+  if (!window.sb) return;
+  try {
+    await sb.from('sidiz_members').delete().eq('id', id);
+    await loadMembers();
+  } catch(e) { alert('삭제 실패: ' + e.message); }
+}
+
+function openMemberColumnSettings() {
+  const list = document.getElementById('member-col-list');
+  if (!list) return;
+  list.innerHTML = Object.entries(memberColumns)
+    .filter(([k]) => k !== '_check')
+    .map(([k,v]) => `
+      <div class="toggle-row" style="padding:8px 0;">
+        <div><div class="tgl-label">${v.label}</div></div>
+        <button class="tgl ${v.show?'on':''}" id="col-tgl-${k}" onclick="this.classList.toggle('on')"></button>
+      </div>`).join('');
+  document.getElementById('member-col-modal').classList.add('open');
+}
+
+function saveMemberColSettings() {
+  Object.keys(memberColumns).filter(k=>k!=='_check').forEach(k => {
+    memberColumns[k].show = document.getElementById(`col-tgl-${k}`)?.classList.contains('on') || false;
+  });
+  closeModalById('member-col-modal');
+  renderMemberTable();
+}
+
+// ══════════════════════════════════════
 // SUPABASE 연동
 // ══════════════════════════════════════
 
@@ -4051,10 +4454,16 @@ async function loadResponsesFromDB(examId) {
       const durMin = Math.floor(durSecs / 60);
       const exam = items.find(i => i.id === examId);
       const hasEssay = exam?.questions?.some(q => q.type === 'essay') || false;
+
+      // 날짜+시간 포맷
+      const fmtDT = (d) => d ? d.toLocaleString('ko-KR', {
+        month:'2-digit', day:'2-digit',
+        hour:'2-digit', minute:'2-digit'
+      }).replace('. ', '/').replace('. ', ' ') : '—';
       return {
         name: r.examinee_name,
-        startTime: start ? start.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) : '—',
-        time: end ? end.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) : '—',
+        startTime: fmtDT(start),
+        time: fmtDT(end),
         duration: r.duration_seconds >= (exam?.time||30)*60 ? '⏱ 시간초과' : durMin + '분',
         score: r.score || 0,
         hasEssay,
@@ -4098,14 +4507,20 @@ function toggleTheme() {
 })();
 
 // ══ 상태 변경 ══
-function changeStatus(itemId, newStatus, selectEl) {
+async function changeStatus(itemId, newStatus, selectEl) {
   const item = items.find(i => i.id === itemId);
   if (!item) return;
   item.status = newStatus;
   save();
-  saveItemToDB(item); // DB 동기화
+  // DB 저장 후 확인
+  await saveItemToDB(item);
   // select 색상 업데이트
   selectEl.className = 'status-select ' + ({live:'s-live',draft:'s-draft',closed:'s-closed'}[newStatus]||'s-draft');
+  // 캐시 무효화 후 전체 재렌더
+  window._dbLoaded = false;
+  if (window.sb) {
+    await loadExamsFromDB();
+  }
   renderAll();
 }
 
