@@ -1328,7 +1328,7 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
       <div class="flex gap-10" style="flex-wrap:wrap;">
         <button class="btn btn-outline btn-sm" onclick="openMemberColumnSettings()">⚙ 항목 관리</button>
         <button class="btn btn-outline btn-sm" onclick="openSessionManager()">📋 회고 세션 관리</button>
-        <button class="btn btn-outline btn-sm" onclick="copySelectedMembers()">📋 선택 복사</button>
+        <button class="btn btn-outline btn-sm" onclick="openCopyModal()">📋 선택 복사</button>
         <button class="btn btn-outline btn-sm" onclick="exportMembersExcel()">📥 엑셀 내보내기</button>
         <button class="btn btn-outline btn-sm" onclick="document.getElementById('member-excel-input').click()">📤 엑셀 업로드</button>
         <input type="file" id="member-excel-input" accept=".xlsx" style="display:none;" onchange="importMembersExcel(this.files[0])"/>
@@ -1337,17 +1337,34 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
     </div>
 
     <!-- 검색 / 필터 -->
-    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+    <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
       <input class="fi" id="member-search" placeholder="이름·매장·역할 검색..." style="flex:1;min-width:160px;" oninput="renderMemberTable()"/>
       <select class="fi" id="member-store-filter" style="width:150px;" onchange="renderMemberTable()">
         <option value="">전체 매장</option>
       </select>
-      <select class="fi" id="member-note-filter" style="width:130px;" onchange="renderMemberTable()">
-        <option value="">노트 전체</option>
-        <option value="yes">노트 있음</option>
-        <option value="no">노트 없음</option>
-      </select>
       <button class="btn btn-outline btn-sm" onclick="clearMemberFilters()">초기화</button>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+      <select class="fi" id="filter-edu-base" style="width:140px;" onchange="renderMemberTable()">
+        <option value="">BASE 전체</option>
+        <option value="O">BASE 이수</option>
+        <option value="none">BASE 미이수</option>
+      </select>
+      <select class="fi" id="filter-edu-b2b" style="width:140px;" onchange="renderMemberTable()">
+        <option value="">B2B 전체</option>
+        <option value="O">B2B 이수</option>
+        <option value="none">B2B 미이수</option>
+      </select>
+      <select class="fi" id="filter-edu-situation" style="width:160px;" onchange="renderMemberTable()">
+        <option value="">SitUation 전체</option>
+        <option value="O">SitUation 이수</option>
+        <option value="none">SitUation 미이수</option>
+      </select>
+      <select class="fi" id="filter-edu-factory" style="width:150px;" onchange="renderMemberTable()">
+        <option value="">공장견학 전체</option>
+        <option value="O">공장견학 이수</option>
+        <option value="none">공장견학 미이수</option>
+      </select>
     </div>
 
     <!-- 테이블 -->
@@ -1678,6 +1695,31 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
     <div class="modal-footer" style="flex-shrink:0;margin-top:16px;">
       <button class="btn btn-outline" onclick="closeModalById('answer-key-modal')">취소</button>
       <button class="btn btn-accent" onclick="generateAnswerKeyPDF()">📄 PDF 다운로드</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 선택 복사 모달 ══ -->
+<div class="modal-bg" id="copy-modal">
+  <div class="modal" style="width:380px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div class="modal-title">복사할 항목 선택</div>
+      <button onclick="closeModalById('copy-modal')" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">×</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button class="btn btn-xs btn-outline" onclick="document.querySelectorAll('.copy-col-check').forEach(c=>c.checked=true)">전체 선택</button>
+      <button class="btn btn-xs btn-outline" onclick="document.querySelectorAll('.copy-col-check').forEach(c=>c.checked=false)">전체 해제</button>
+    </div>
+    <div id="copy-col-list" style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto;"></div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="copy-include-header" checked style="width:15px;height:15px;accent-color:var(--accent);">
+        <span>헤더(항목명) 포함</span>
+      </label>
+    </div>
+    <div class="modal-footer" style="margin-top:16px;">
+      <button class="btn btn-outline" onclick="closeModalById('copy-modal')">취소</button>
+      <button class="btn btn-accent" onclick="executeCopy()">📋 복사하기</button>
     </div>
   </div>
 </div>
@@ -4070,6 +4112,10 @@ let memberColumns = {
   tenure:      { label:'근무기간',  show:true,  sortable:true,  computed:true },
   retro_count: { label:'응대회고',  show:true,  sortable:true,  computed:true },
   memo:        { label:'메모',      show:false, sortable:false },
+  edu_base:     { label:'BASE',      show:true,  sortable:true },
+  edu_b2b:      { label:'B2B',       show:true,  sortable:true },
+  edu_situation:{ label:'SitUation', show:true,  sortable:true },
+  edu_factory:  { label:'공장견학',  show:true,  sortable:true },
 };
 
 // DB에서 불러온 동적 커스텀 컬럼
@@ -4136,8 +4182,11 @@ function updateMemberDatalist() {
 
 function renderMemberTable() {
   const search = (document.getElementById('member-search')?.value || '').toLowerCase();
-  const storeF = document.getElementById('member-store-filter')?.value || '';
-  const noteF  = document.getElementById('member-note-filter')?.value || '';
+  const storeF      = document.getElementById('member-store-filter')?.value || '';
+  const eduBase     = document.getElementById('filter-edu-base')?.value || '';
+  const eduB2b      = document.getElementById('filter-edu-b2b')?.value || '';
+  const eduSit      = document.getElementById('filter-edu-situation')?.value || '';
+  const eduFactory  = document.getElementById('filter-edu-factory')?.value || '';
 
   let filtered = members.filter(m => {
     const matchS = !search ||
@@ -4145,10 +4194,11 @@ function renderMemberTable() {
       (m.store||'').toLowerCase().includes(search) ||
       (m.role||'').toLowerCase().includes(search);
     const matchStore = !storeF || m.store === storeF;
-    const matchNote  = !noteF  ||
-      (noteF==='yes' && calcRetroCount(m) > 0) ||
-      (noteF==='no'  && calcRetroCount(m) === 0);
-    return matchS && matchStore && matchNote;
+    const matchBase    = !eduBase    || (eduBase==='O' ? m.edu_base==='O' : m.edu_base!=='O');
+    const matchB2b     = !eduB2b     || (eduB2b==='O' ? m.edu_b2b==='O' : m.edu_b2b!=='O');
+    const matchSit     = !eduSit     || (eduSit==='O' ? m.edu_situation==='O' : m.edu_situation!=='O');
+    const matchFactory = !eduFactory || (eduFactory==='O' ? m.edu_factory==='O' : m.edu_factory!=='O');
+    return matchS && matchStore && matchBase && matchB2b && matchSit && matchFactory;
   });
 
   // 정렬
@@ -4232,28 +4282,50 @@ function toggleAllMemberCheck(el) {
 function clearMemberFilters() {
   document.getElementById('member-search').value = '';
   document.getElementById('member-store-filter').value = '';
-  document.getElementById('member-note-filter').value = '';
+  const eduFilters = ['filter-edu-base','filter-edu-b2b','filter-edu-situation','filter-edu-factory'];
+  eduFilters.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   renderMemberTable();
 }
 
-function copySelectedMembers() {
+function openCopyModal() {
   const checked = [...document.querySelectorAll('.member-check:checked')];
-  if (!checked.length) { alert('복사할 SE를 선택해주세요.'); return; }
+  if (!checked.length) { alert('복사할 SE를 먼저 선택해주세요.'); return; }
+
+  const colList = document.getElementById('copy-col-list');
+  colList.innerHTML = Object.entries(memberColumns)
+    .filter(([k]) => !['_check'].includes(k))
+    .map(([k, v]) => `
+      <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);cursor:pointer;font-size:13px;">
+        <input type="checkbox" class="copy-col-check" value="${k}" ${['name','phone'].includes(k)?'checked':''} style="width:15px;height:15px;accent-color:var(--accent);">
+        <span>${v.label}</span>
+      </label>`).join('');
+
+  document.getElementById('copy-modal').classList.add('open');
+}
+
+function executeCopy() {
+  const checked = [...document.querySelectorAll('.member-check:checked')];
   const ids = checked.map(c => c.dataset.id);
   const selected = members.filter(m => ids.includes(m.id));
-  const visibleCols = Object.entries(memberColumns)
-    .filter(([k,v]) => v.show && k !== '_check')
-    .map(([k,v]) => ({ key:k, label:v.label }));
 
-  const header = visibleCols.map(c=>c.label).join('\t');
-  const rows = selected.map(m => visibleCols.map(c => {
+  const selectedCols = [...document.querySelectorAll('.copy-col-check:checked')]
+    .map(c => ({ key: c.value, label: memberColumns[c.value]?.label || c.value }));
+
+  if (!selectedCols.length) { alert('복사할 항목을 선택해주세요.'); return; }
+
+  const includeHeader = document.getElementById('copy-include-header')?.checked;
+  const rows = selected.map(m => selectedCols.map(c => {
     if (c.key==='tenure') return calcTenure(m.hire_date);
-    if (c.key==='retro_count') return calcRetroCount(m) > 0 ? `✓ ${calcRetroCount(m)}개` : '—';
+    if (c.key==='retro_count') return calcRetroCount(m) > 0 ? `${calcRetroCount(m)}개` : '—';
     return m[c.key] ?? '—';
   }).join('\t'));
 
-  navigator.clipboard.writeText([header,...rows].join('\n'))
-    .then(() => alert(`${selected.length}명의 정보가 복사되었습니다.`))
+  const text = includeHeader
+    ? [selectedCols.map(c=>c.label).join('\t'), ...rows].join('\n')
+    : rows.join('\n');
+
+  navigator.clipboard.writeText(text)
+    .then(() => { closeModalById('copy-modal'); alert(`${selected.length}명 · ${selectedCols.length}개 항목 복사 완료!`); })
     .catch(() => alert('복사 실패 — 브라우저 권한을 확인해주세요.'));
 }
 
@@ -4693,24 +4765,44 @@ function openAnswerKeyEditor() {
       const correctIdx = parseInt(q.answer);
       answerField = `
         <div class="fg" style="margin-bottom:8px;">
-          <label class="fl">정답 (보기 번호)</label>
-          <select class="fi fi-sm" id="pdf-answer-${i}">
-            ${q.options.map((o, oi) => `<option value="${oi}" ${oi===correctIdx?'selected':''}>${oi+1}. ${o}</option>`).join('')}
-          </select>
+          <label class="fl">정답 (복수 선택 가능)</label>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+            ${q.options.map((o, oi) => `
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                <input type="checkbox" class="pdf-answer-check-${i}" value="${oi}" ${oi===correctIdx?'checked':''} style="width:15px;height:15px;cursor:pointer;accent-color:var(--accent);">
+                <span><strong>${oi+1}.</strong> ${o}</span>
+              </label>`).join('')}
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--muted);margin-top:4px;padding-top:6px;border-top:1px solid var(--border);">
+              <input type="checkbox" id="pdf-no-answer-${i}" style="width:15px;height:15px;cursor:pointer;" onchange="if(this.checked)document.querySelectorAll('.pdf-answer-check-${i}').forEach(c=>c.checked=false);">
+              <span>정답 없음</span>
+            </label>
+          </div>
         </div>`;
     } else if (q.type === 'ox') {
       answerField = `
         <div class="fg" style="margin-bottom:8px;">
           <label class="fl">정답</label>
-          <select class="fi fi-sm" id="pdf-answer-${i}">
-            <option value="O" ${q.answer==='O'?'selected':''}>O</option>
-            <option value="X" ${q.answer==='X'?'selected':''}>X</option>
-          </select>
+          <div style="display:flex;gap:10px;margin-top:4px;align-items:center;">
+            <select class="fi fi-sm" id="pdf-answer-${i}" style="width:100px;">
+              <option value="O" ${q.answer==='O'?'selected':''}>O</option>
+              <option value="X" ${q.answer==='X'?'selected':''}>X</option>
+            </select>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;color:var(--muted);">
+              <input type="checkbox" id="pdf-no-answer-${i}" style="width:14px;height:14px;" onchange="document.getElementById('pdf-answer-${i}').disabled=this.checked;">
+              <span>정답 없음</span>
+            </label>
+          </div>
         </div>`;
     } else if (q.type === 'short' || q.type === 'essay') {
       answerField = `
         <div class="fg" style="margin-bottom:8px;">
-          <label class="fl">${q.type==='essay'?'모범 답안':'정답'}</label>
+          <label class="fl" style="display:flex;align-items:center;gap:10px;">
+            <span>${q.type==='essay'?'모범 답안':'정답'}</span>
+            <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);font-weight:400;cursor:pointer;">
+              <input type="checkbox" id="pdf-no-answer-${i}" style="width:13px;height:13px;" onchange="document.getElementById('pdf-answer-${i}').disabled=this.checked;">
+              정답 없음
+            </label>
+          </label>
           <textarea class="fi fi-sm" id="pdf-answer-${i}" rows="2" style="resize:vertical;">${q.type==='essay'?(q.modelAnswer||''):(q.answer||'')}</textarea>
         </div>`;
     }
@@ -4801,25 +4893,42 @@ function generateAnswerKeyPDF() {
     let explanationHTML = '';
 
     if (q.type === 'multiple' && q.options) {
-      const correctIdx = parseInt(document.getElementById(`pdf-answer-${i}`)?.value ?? q.answer);
+      const noAnswer = document.getElementById(`pdf-no-answer-${i}`)?.checked;
+      const checkedBoxes = [...document.querySelectorAll(`.pdf-answer-check-${i}:checked`)].map(c => parseInt(c.value));
       optionsHTML = '<div class="options">' + q.options.map((o, oi) =>
         `<div class="option-row">
-          <div class="opt-num ${oi === correctIdx ? 'correct' : ''}">${oi + 1}</div>
+          <div class="opt-num ${!noAnswer && checkedBoxes.includes(oi) ? 'correct' : ''}">${oi + 1}</div>
           <span>${o}</span>
         </div>`
       ).join('') + '</div>';
-      answerHTML = `<div class="answer-row"><span class="answer-label">정답</span><span class="answer-val">${correctIdx + 1}번 — ${q.options[correctIdx] || ''}</span></div>`;
+      if (noAnswer) {
+        answerHTML = `<div class="answer-row"><span class="answer-label">정답</span><span class="answer-val" style="color:#888;">정답 없음</span></div>`;
+      } else if (checkedBoxes.length === 0) {
+        answerHTML = '';
+      } else {
+        const ansText = checkedBoxes.map(ci => `${ci+1}번 — ${q.options[ci]}`).join(', ');
+        answerHTML = `<div class="answer-row"><span class="answer-label">정답</span><span class="answer-val">${ansText}</span></div>`;
+      }
     } else if (q.type === 'ox') {
+      const noAnswer = document.getElementById(`pdf-no-answer-${i}`)?.checked;
       const ans = document.getElementById(`pdf-answer-${i}`)?.value || q.answer;
-      answerHTML = `<div class="answer-row"><span class="answer-label">정답</span><span class="answer-val">${ans}</span></div>`;
+      answerHTML = noAnswer
+        ? `<div class="answer-row"><span class="answer-label">정답</span><span class="answer-val" style="color:#888;">정답 없음</span></div>`
+        : `<div class="answer-row"><span class="answer-label">정답</span><span class="answer-val">${ans}</span></div>`;
     } else if (q.type === 'short') {
+      const noAnswer = document.getElementById(`pdf-no-answer-${i}`)?.checked;
       const ans = document.getElementById(`pdf-answer-${i}`)?.value || q.answer;
-      answerHTML = `<div class="answer-row"><span class="answer-label">정답</span><span class="answer-val">${ans}</span></div>`;
+      answerHTML = noAnswer
+        ? `<div class="answer-row"><span class="answer-label">정답</span><span class="answer-val" style="color:#888;">정답 없음</span></div>`
+        : `<div class="answer-row"><span class="answer-label">정답</span><span class="answer-val">${ans}</span></div>`;
     } else if (q.type === 'essay') {
+      const noAnswer = document.getElementById(`pdf-no-answer-${i}`)?.checked;
       const modelAns = document.getElementById(`pdf-answer-${i}`)?.value || q.modelAnswer || '';
-      answerHTML = modelAns
-        ? `<div class="answer-row"><span class="answer-label">모범 답안</span></div><div class="explanation" style="border-left-color:#94CDEB;">${modelAns}</div>`
-        : `<div class="essay-note">✎ 서술형 문항 — 관리자 채점</div>`;
+      answerHTML = noAnswer
+        ? `<div class="essay-note">정답 없음</div>`
+        : modelAns
+          ? `<div class="answer-row"><span class="answer-label">모범 답안</span></div><div class="explanation" style="border-left-color:#94CDEB;">${modelAns}</div>`
+          : `<div class="essay-note">✎ 서술형 문항 — 관리자 채점</div>`;
     } else {
       answerHTML = `<div class="essay-note">${tLabel} 문항</div>`;
     }
