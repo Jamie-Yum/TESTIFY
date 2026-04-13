@@ -2337,7 +2337,7 @@ function loadEditorFields(item) {
   document.getElementById('tgl-result').className = 'tgl' + (item.showResult?' on':'');
   document.getElementById('tgl-retake').className  = 'tgl' + (item.retake?' on':'');
   document.getElementById('tgl-shuffle').className = 'tgl' + (item.shuffleOpts?' on':'');
-  document.getElementById('tgl-collect-name').className = 'tgl' + (item.collectName!==false?' on':'');
+  document.getElementById('tgl-collect-name').className = 'tgl' + (item.collectName===true?' on':'') + (item.mode==='exam'?' on':'');
   document.getElementById('tgl-collect-store').className = 'tgl' + (item.collectStore?' on':'');
   document.getElementById('tgl-store-auto').className = 'tgl' + (item.storeAuto?' on':'');
   updateStoreAutoToggle();
@@ -3633,7 +3633,7 @@ function loadIntro(item) {
   startBtn.className = 'btn-start' + (isSurvey?' survey-start':'');
 
   // 이름 수집 설정
-  const collectName = isSurvey ? (item.collectName !== false) : true;
+  const collectName = isSurvey ? (item.collectName === true) : true;
   const collectStore = item.collectStore === true;
   const storeAuto = item.storeAuto === true && collectName && collectStore;
 
@@ -3711,7 +3711,7 @@ function startExam() {
   const pw   = document.getElementById('inp-pw').value.trim();
   const err  = document.getElementById('inp-err');
   const isSurveyStart = activeItem.mode === 'survey';
-  const collectName = isSurveyStart ? (activeItem.collectName !== false) : true;
+  const collectName = isSurveyStart ? (activeItem.collectName === true) : true;
   const collectStore = activeItem.collectStore === true;
 
   if (!isSurveyStart && !name) { err.classList.add('show'); return; }
@@ -5438,9 +5438,9 @@ async function loadExamsFromDB() {
       retake: e.retake,
       shuffleOpts: e.shuffle_options,
       shuffleQ: e.shuffle_questions,
-      collectName:  e.collect_name !== false,
-      collectStore: e.collect_store || false,
-      storeAuto:    e.store_auto || false,
+      collectName:  e.collect_name === true,
+      collectStore: e.collect_store === true,
+      storeAuto:    e.store_auto === true,
       status: e.status,
       roster: e.roster || [],
       thankMsg: e.thank_msg || '',
