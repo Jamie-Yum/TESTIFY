@@ -3657,10 +3657,20 @@ function loadIntro(item) {
   // 매장 드롭다운 채우기 (SE 명단의 매장 목록)
   const storeSelect = document.getElementById('inp-store');
   if (storeSelect && collectStore) {
-    const stores = [...new Set(members.map(m=>m.store).filter(Boolean))].sort();
-    storeSelect.innerHTML = '<option value="">매장을 선택하세요</option>' +
-      stores.map(s => `<option value="${s}">${s}</option>`).join('');
     storeSelect.className = 'intro-fi' + (isSurvey?' survey-fi':'');
+    // members가 있으면 바로 사용, 없으면 DB에서 직접 불러오기
+    const fillStores = (storeList) => {
+      storeSelect.innerHTML = '<option value="">매장을 선택하세요</option>' +
+        storeList.map(s => `<option value="${s}">${s}</option>`).join('');
+    };
+    if (members.length) {
+      fillStores([...new Set(members.map(m=>m.store).filter(Boolean))].sort());
+    } else if (window.sb) {
+      sb.from('sidiz_members').select('store').then(({ data }) => {
+        const stores = [...new Set((data||[]).map(m=>m.store).filter(Boolean))].sort();
+        fillStores(stores);
+      });
+    }
   }
 
   const pw = document.getElementById('inp-pw');
