@@ -979,6 +979,13 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
   <span id="theme-icon">☀️</span> <span id="theme-label">라이트 모드</span>
 </button>
 
+<!-- ══ 정답·해설 공유 뷰 ══ -->
+<div id="view-answerkey" class="view" style="background:var(--bg);min-height:100vh;padding:40px 20px;">
+  <div style="max-width:740px;margin:0 auto;">
+    <div id="ak-content"></div>
+  </div>
+</div>
+
 <div id="view-landing" class="view active">
   <div class="landing-inner">
     <div class="landing-logo">TEST<span>IFY</span></div>
@@ -1685,16 +1692,25 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0;">
       <div>
         <div class="modal-title">정답·해설 편집</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px;">편집 내용은 PDF에만 반영되며 DB에는 저장되지 않습니다.</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">저장하면 공유 링크가 생성됩니다. 원본 시험 데이터는 변경되지 않습니다.</div>
       </div>
       <button onclick="closeModalById('answer-key-modal')" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">×</button>
+    </div>
+    <!-- 공유 링크 표시 영역 -->
+    <div id="answer-key-link-bar" style="display:none;background:rgba(53,127,255,.07);border:1px solid rgba(53,127,255,.2);border-radius:var(--rs);padding:10px 14px;margin-bottom:14px;flex-shrink:0;display:none;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">공유 링크</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="fi fi-sm" id="answer-key-share-url" readonly style="flex:1;background:var(--surface);font-size:12px;" onclick="this.select()"/>
+        <button class="btn btn-xs btn-accent" onclick="copyAnswerKeyLink()">복사</button>
+      </div>
     </div>
     <div style="flex:1;overflow-y:auto;padding-right:4px;">
       <div id="answer-key-editor-list" style="display:flex;flex-direction:column;gap:12px;"></div>
     </div>
     <div class="modal-footer" style="flex-shrink:0;margin-top:16px;">
       <button class="btn btn-outline" onclick="closeModalById('answer-key-modal')">취소</button>
-      <button class="btn btn-accent" onclick="generateAnswerKeyPDF()">📄 PDF 다운로드</button>
+      <button class="btn btn-outline btn-sm" onclick="generateAnswerKeyPDF()" style="border-color:var(--accent);color:var(--accent);">📄 PDF만 다운로드</button>
+      <button class="btn btn-accent" onclick="saveAndShareAnswerKey()">💾 저장 & 링크 생성</button>
     </div>
   </div>
 </div>
@@ -4956,6 +4972,160 @@ function generateAnswerKeyPDF() {
   setTimeout(() => win.print(), 500);
 }
 
+
+// ── 정답·해설 저장 & 링크 생성 ──
+async function saveAndShareAnswerKey() {
+  if (!currentDetailItemId || !window.sb) return;
+  const item = items.find(i => i.id === currentDetailItemId);
+  if (!item) return;
+
+  const docTitle = document.getElementById('pdf-doc-title')?.value || item.title + ' — 정답 및 해설';
+
+  // 편집된 문항 데이터 수집
+  const editedQuestions = item.questions.map((q, i) => {
+    const text = document.getElementById(`pdf-text-${i}`)?.value || q.text;
+    const expl = document.getElementById(`pdf-expl-${i}`)?.value || q.explanation || '';
+    let answer = q.answer;
+    let modelAnswer = q.modelAnswer || '';
+    let noAnswer = document.getElementById(`pdf-no-answer-${i}`)?.checked || false;
+
+    if (q.type === 'multiple') {
+      const checked = [...document.querySelectorAll(`.pdf-answer-check-${i}:checked`)].map(c => parseInt(c.value));
+      answer = noAnswer ? null : checked;
+    } else if (q.type === 'ox' || q.type === 'short') {
+      answer = noAnswer ? null : (document.getElementById(`pdf-answer-${i}`)?.value || q.answer);
+    } else if (q.type === 'essay') {
+      modelAnswer = noAnswer ? null : (document.getElementById(`pdf-answer-${i}`)?.value || q.modelAnswer || '');
+      answer = null;
+    }
+
+    return { ...q, text, explanation: expl, answer, modelAnswer, noAnswer };
+  });
+
+  // 고유 ID 생성 (시험ID 기반)
+  const shareId = currentDetailItemId + '_ak';
+
+  try {
+    const btn = document.querySelector('#answer-key-modal .btn-accent');
+    btn.textContent = '저장 중...';
+    btn.disabled = true;
+
+    await sb.from('sidiz_answer_keys').upsert({
+      id: shareId,
+      exam_id: currentDetailItemId,
+      title: docTitle,
+      questions: editedQuestions,
+      updated_at: new Date().toISOString(),
+    });
+
+    // 링크 생성
+    const url = `${location.origin}${location.pathname}?answerkey=${shareId}`;
+    const linkBar = document.getElementById('answer-key-link-bar');
+    const urlInput = document.getElementById('answer-key-share-url');
+    linkBar.style.display = 'block';
+    urlInput.value = url;
+
+    btn.textContent = '💾 저장 & 링크 생성';
+    btn.disabled = false;
+  } catch(e) {
+    alert('저장 실패: ' + e.message);
+    const btn = document.querySelector('#answer-key-modal .btn-accent');
+    btn.textContent = '💾 저장 & 링크 생성';
+    btn.disabled = false;
+  }
+}
+
+function copyAnswerKeyLink() {
+  const url = document.getElementById('answer-key-share-url')?.value;
+  if (!url) return;
+  navigator.clipboard.writeText(url)
+    .then(() => alert('링크가 복사되었습니다!'))
+    .catch(() => alert('복사 실패'));
+}
+
+// ── 공유 링크로 접근 시 렌더 ──
+async function loadAnswerKeyView(shareId) {
+  if (!window.sb) return;
+  try {
+    const { data, error } = await sb.from('sidiz_answer_keys').select('*').eq('id', shareId).single();
+    if (error || !data) {
+      document.getElementById('ak-content').innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted);">존재하지 않는 정답·해설입니다.</div>';
+      return;
+    }
+
+    const today = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
+    const typeLabel = {
+      multiple:'객관식', ox:'O / X', short:'단답형', essay:'서술형', scale:'척도',
+      checkbox:'체크박스', dropdown:'드롭다운', linear:'선형 배율', star:'등급'
+    };
+
+    let html = `
+      <div style="border-bottom:3px solid var(--accent);padding-bottom:20px;margin-bottom:32px;">
+        <div style="font-size:22px;font-weight:700;color:var(--accent);letter-spacing:-.5px;margin-bottom:4px;">${data.title}</div>
+        <div style="font-size:12px;color:var(--muted);">총 ${data.questions.length}문항 · ${today} 기준</div>
+      </div>`;
+
+    data.questions.forEach((q, i) => {
+      const tLabel = typeLabel[q.type] || q.type;
+      let optionsHTML = '';
+      let answerHTML = '';
+      let explanationHTML = '';
+
+      if (q.type === 'multiple' && q.options) {
+        const correctIdxs = q.noAnswer ? [] : (Array.isArray(q.answer) ? q.answer : [parseInt(q.answer)]);
+        optionsHTML = '<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:12px;">' +
+          q.options.map((o, oi) => {
+            const isCorrect = !q.noAnswer && correctIdxs.includes(oi);
+            return `<div style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:13px;">
+              <div style="width:22px;height:22px;border-radius:50%;border:1.5px solid ${isCorrect?'var(--accent)':'var(--border2)'};
+                background:${isCorrect?'var(--accent)':'transparent'};color:${isCorrect?'#fff':'var(--muted)'};
+                display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${oi+1}</div>
+              <span style="color:${isCorrect?'var(--text)':'var(--muted)'};">${o}</span>
+            </div>`;
+          }).join('') + '</div>';
+
+        if (q.noAnswer) {
+          answerHTML = `<div style="display:flex;gap:8px;padding:10px 0;border-top:1px dashed var(--border);margin-top:4px;"><span style="font-size:11px;font-weight:700;color:var(--accent);">정답</span><span style="color:var(--muted);">정답 없음</span></div>`;
+        } else if (correctIdxs.length) {
+          const ansText = correctIdxs.map(ci => `${ci+1}번 — ${q.options[ci]}`).join(', ');
+          answerHTML = `<div style="display:flex;gap:8px;padding:10px 0;border-top:1px dashed var(--border);margin-top:4px;"><span style="font-size:11px;font-weight:700;color:var(--accent);">정답</span><span style="font-weight:600;color:var(--accent);">${ansText}</span></div>`;
+        }
+      } else if (q.type === 'ox' || q.type === 'short') {
+        answerHTML = q.noAnswer
+          ? `<div style="display:flex;gap:8px;padding:10px 0;border-top:1px dashed var(--border);"><span style="font-size:11px;font-weight:700;color:var(--accent);">정답</span><span style="color:var(--muted);">정답 없음</span></div>`
+          : `<div style="display:flex;gap:8px;padding:10px 0;border-top:1px dashed var(--border);"><span style="font-size:11px;font-weight:700;color:var(--accent);">정답</span><span style="font-weight:600;color:var(--accent);">${q.answer||''}</span></div>`;
+      } else if (q.type === 'essay') {
+        answerHTML = q.noAnswer || !q.modelAnswer
+          ? `<div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:8px;">✎ 서술형 문항</div>`
+          : `<div style="margin-top:10px;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:4px;">모범 답안</div>
+             <div style="background:var(--surface2);border-left:3px solid var(--accent2);padding:10px 14px;border-radius:0 var(--rs) var(--rs) 0;font-size:13px;line-height:1.7;">${q.modelAnswer}</div>`;
+      }
+
+      if (q.explanation) {
+        explanationHTML = `<div style="margin-top:10px;background:rgba(107,139,246,.08);border-left:3px solid var(--accent4);padding:8px 12px;border-radius:0 6px 6px 0;font-size:12px;color:var(--muted);line-height:1.6;">💡 ${q.explanation}</div>`;
+      }
+
+      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;margin-bottom:16px;">
+        <div style="margin-bottom:12px;">
+          <span style="background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;">Q${i+1}</span>
+          <span style="background:var(--surface2);color:var(--muted);font-size:10px;padding:2px 8px;border-radius:20px;margin-left:6px;">${tLabel}</span>
+        </div>
+        <div style="font-size:14px;font-weight:600;line-height:1.6;margin-bottom:12px;">${q.text.replace(/\n/g,'<br>')}</div>
+        ${optionsHTML}${answerHTML}${explanationHTML}
+      </div>`;
+    });
+
+    html += `<div style="text-align:center;font-size:11px;color:var(--dim);padding:20px 0;border-top:1px solid var(--border);">TESTIFY — 시디즈 사내 시험 플랫폼</div>`;
+    document.getElementById('ak-content').innerHTML = html;
+
+    // 뷰 전환
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-answerkey').classList.add('active');
+  } catch(e) {
+    console.warn('정답·해설 로드 실패:', e.message);
+  }
+}
+
 // ── 관리자: 시험 목록 로드 ──
 async function loadExamsFromDB() {
   if (!window.sb) { console.warn('Supabase 미연결'); return; }
@@ -5304,6 +5474,12 @@ function handleUrlParams() {
   const params = new URLSearchParams(window.location.search);
   const testId  = params.get('test');
   const adminId = params.get('admin');
+
+  const answerkeyId = params.get('answerkey');
+  if (answerkeyId) {
+    loadAnswerKeyView(answerkeyId);
+    return;
+  }
 
   if (testId) {
     const item = items.find(i => i.id === testId);
