@@ -1352,39 +1352,41 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
       </div>
     </div>
 
-    <!-- 검색 / 필터 -->
+    <!-- 검색 / 필터 1행: 검색만 -->
     <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
       <input class="fi" id="member-search" placeholder="이름·매장·역할 검색..." style="flex:1;min-width:160px;" oninput="renderMemberTable()"/>
-      <select class="fi" id="member-store-type-filter" style="width:130px;" onchange="renderMemberTable()">
-        <option value="">전체 매장형태</option>
+    </div>
+    <!-- 검색 / 필터 2행: 전체 필터 -->
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-outline btn-sm" onclick="clearMemberFilters()">초기화</button>
+      <select class="fi" id="member-store-type-filter" style="width:120px;" onchange="renderMemberTable()">
+        <option value="">매장 형태</option>
         <option value="더프 매장">더프 매장</option>
         <option value="입점몰">입점몰</option>
       </select>
-      <select class="fi" id="member-store-filter" style="width:150px;" onchange="renderMemberTable()">
-        <option value="">전체 매장</option>
+      <select class="fi" id="member-store-filter" style="width:120px;" onchange="renderMemberTable()">
+        <option value="">매장</option>
       </select>
-      <button class="btn btn-outline btn-sm" onclick="clearMemberFilters()">초기화</button>
-    </div>
-    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
-      <select class="fi" id="filter-edu-base" style="width:140px;" onchange="renderMemberTable()">
-        <option value="">BASE 전체</option>
-        <option value="O">BASE 이수</option>
-        <option value="none">BASE 미이수</option>
+      <span style="font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;">교육</span>
+      <select class="fi" id="filter-edu-base" style="width:150px;" onchange="renderMemberTable()">
+        <option value="">BASE Program</option>
+        <option value="O">BASE Program 이수</option>
+        <option value="none">BASE Program 미이수</option>
       </select>
       <select class="fi" id="filter-edu-b2b" style="width:140px;" onchange="renderMemberTable()">
-        <option value="">B2B 전체</option>
-        <option value="O">B2B 이수</option>
-        <option value="none">B2B 미이수</option>
+        <option value="">B2B 킥오프</option>
+        <option value="O">B2B 킥오프 이수</option>
+        <option value="none">B2B 킥오프 미이수</option>
       </select>
-      <select class="fi" id="filter-edu-situation" style="width:160px;" onchange="renderMemberTable()">
-        <option value="">SitUation 전체</option>
-        <option value="O">SitUation 이수</option>
-        <option value="none">SitUation 미이수</option>
+      <select class="fi" id="filter-edu-situation" style="width:170px;" onchange="renderMemberTable()">
+        <option value="">SitUation Program</option>
+        <option value="O">SitUation Program 이수</option>
+        <option value="none">SitUation Program 미이수</option>
       </select>
       <select class="fi" id="filter-edu-factory" style="width:150px;" onchange="renderMemberTable()">
-        <option value="">공장견학 전체</option>
-        <option value="O">공장견학 이수</option>
-        <option value="none">공장견학 미이수</option>
+        <option value="">평택공장 투어</option>
+        <option value="O">평택공장 투어 이수</option>
+        <option value="none">평택공장 투어 미이수</option>
       </select>
     </div>
 
@@ -4192,10 +4194,10 @@ let memberColumns = {
   retro_count: { label:'응대회고',  show:true,  sortable:true,  computed:true },
   seat1_score:  { label:'SEAT1 점수', show:true, sortable:true,  computed:true },
   memo:        { label:'메모',      show:false, sortable:false },
-  edu_base:     { label:'BASE',      show:true,  sortable:true },
-  edu_b2b:      { label:'B2B',       show:true,  sortable:true },
-  edu_situation:{ label:'SitUation', show:true,  sortable:true },
-  edu_factory:  { label:'공장견학',  show:true,  sortable:true },
+  edu_base:     { label:'BASE Program', show:true, sortable:true },
+  edu_b2b:      { label:'B2B 킥오프',  show:true, sortable:true },
+  edu_situation:{ label:'SitUation Program', show:true, sortable:true },
+  edu_factory:  { label:'평택공장 투어', show:true, sortable:true },
 };
 
 // DB에서 불러온 동적 커스텀 컬럼
