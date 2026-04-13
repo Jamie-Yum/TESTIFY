@@ -1037,6 +1037,10 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 
     <div class="sb-footer">
       <div class="sb-back" onclick="goLanding()">← 메인으로</div>
+      <div id="deploy-time" style="font-size:10px;color:var(--dim);margin-top:8px;line-height:1.5;">
+        <div style="font-weight:600;color:var(--muted);margin-bottom:2px;">마지막 배포</div>
+        <div id="deploy-time-val">로딩 중...</div>
+      </div>
     </div>
   </nav>
 
@@ -2029,6 +2033,7 @@ function confirmAdminPw() {
   closeModalById('admin-pw-modal');
   showView('admin');
   renderAll();
+  loadDeployTime();
 }
 let isPreviewMode = false;
 
@@ -2240,9 +2245,45 @@ function cardHTML(item) {
       <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();previewExaminee('${item.id}')">${item.mode === 'survey' ? '설문하기' : '시험보기'}</button>
       <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();openShare('${item.id}')">공유</button>
       <button class="btn btn-xs btn-outline" style="color:var(--accent2);border-color:rgba(96,196,240,.3);" onclick="event.stopPropagation();goToResult('${item.id}')">결과보기</button>
+      <button class="btn btn-xs btn-outline" style="color:var(--accent4);border-color:rgba(107,139,246,.3);" onclick="event.stopPropagation();duplicateItem('${item.id}')">복제</button>
       <button class="btn btn-xs btn-danger" onclick="event.stopPropagation();askDelete('${item.id}')">삭제</button>
     </div>
   </div>`;
+}
+
+
+// ── 시험/설문 복제 ──
+async function duplicateItem(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  const newId = 'i' + Date.now();
+  const newItem = JSON.parse(JSON.stringify(item)); // 깊은 복사
+  newItem.id = newId;
+  newItem.title = item.title + ' (복제)';
+  newItem.status = 'draft';
+  // 문항 id도 새로 발급
+  newItem.questions = newItem.questions.map((q, i) => ({
+    ...q,
+    id: ++nextQId
+  }));
+  items.push(newItem);
+  save();
+  await saveItemToDB(newItem);
+  renderAll();
+  editItem(newId);
+}
+
+// ── 문항 복제 ──
+function duplicateQ(qId) {
+  const item = getCurrent();
+  if (!item) return;
+  const idx = item.questions.findIndex(q => String(q.id) === String(qId));
+  if (idx === -1) return;
+  const original = item.questions[idx];
+  const copy = { ...JSON.parse(JSON.stringify(original)), id: ++nextQId };
+  item.questions.splice(idx + 1, 0, copy); // 바로 아래에 삽입
+  save();
+  renderQList(item.questions, item.mode);
 }
 
 // ══════════════════════════════════════
@@ -2354,7 +2395,11 @@ function saveItem() {
   item.thankMsg = document.getElementById('f-thank-msg').value.trim();
   save();
   updateSharePanel(item);
-  saveItemToDB(item);
+  // 캐시 초기화 후 DB 저장 → 즉시 반영
+  window._dbLoaded = false;
+  saveItemToDB(item).then(() => {
+    loadExamsFromDB().then(() => renderAll());
+  });
   alert('저장 & 배포 완료! 링크를 공유하세요.');
 }
 
@@ -2608,6 +2653,7 @@ function qItemHTML(q, i, mode) {
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
           <button class="tgl ${q.fixedOrder?'on':''}" onclick="toggleFixed('${q.id}',this)"></button>순서 고정 🔒
         </label>
+        <button class="btn btn-xs btn-outline" style="color:var(--accent4);border-color:rgba(107,139,246,.3);" onclick="duplicateQ('${q.id}')">복제</button>
         <button class="btn btn-xs btn-danger" onclick="deleteQ('${q.id}')">삭제</button>
       </div>
     </div>`;
@@ -2616,6 +2662,7 @@ function qItemHTML(q, i, mode) {
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
         <button class="tgl ${q.fixedOrder?'on':''}" onclick="toggleFixed('${q.id}',this)"></button>순서 고정 🔒
       </label>
+      <button class="btn btn-xs btn-outline" style="color:var(--accent4);border-color:rgba(107,139,246,.3);" onclick="duplicateQ('${q.id}')">복제</button>
       <button class="btn btn-xs btn-danger" onclick="deleteQ('${q.id}')">삭제</button>
     </div>`;
   }
@@ -5340,6 +5387,27 @@ async function loadAnswerKeyView(shareId) {
 }
 
 // store_auto 컬럼: ALTER TABLE sidiz_exams ADD COLUMN IF NOT EXISTS store_auto BOOLEAN DEFAULT FALSE;
+
+// ── GitHub 마지막 배포 시간 ──
+async function loadDeployTime() {
+  try {
+    const res = await fetch('https://api.github.com/repos/jamie-yum/testify/commits?per_page=1');
+    if (!res.ok) throw new Error('API 오류');
+    const data = await res.json();
+    const commitDate = data[0]?.commit?.committer?.date;
+    if (!commitDate) throw new Error('날짜 없음');
+    const d = new Date(commitDate);
+    const fmt = d.toLocaleString('ko-KR', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit',
+      timeZone: 'Asia/Seoul'
+    });
+    document.getElementById('deploy-time-val').textContent = fmt;
+  } catch(e) {
+    document.getElementById('deploy-time-val').textContent = '확인 불가';
+  }
+}
+
 // ── 관리자: 시험 목록 로드 ──
 async function loadExamsFromDB() {
   if (!window.sb) { console.warn('Supabase 미연결'); return; }
