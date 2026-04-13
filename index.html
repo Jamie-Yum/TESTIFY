@@ -1469,10 +1469,18 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
       시험 시작 후 다른 탭으로 이동하거나 뒤로 가기 시 자동으로 기록됩니다. 시간이 초과되면 즉시 제출됩니다.
     </div>
     <hr class="divider">
-    <div class="fg" id="name-group">
+    <div class="fg" id="name-group" style="position:relative;">
       <label class="fl">이름</label>
-      <input class="intro-fi" id="inp-name" placeholder="홍길동" list="member-name-datalist" oninput="autoFillStore(this.value)"/>
-      <datalist id="member-name-datalist"></datalist>
+      <input class="intro-fi" id="inp-name" placeholder="홍길동"
+        oninput="onNameInput(this.value)"
+        onblur="setTimeout(()=>hideNameDropdown(),200)"
+        autocomplete="off"/>
+      <div id="name-dropdown" style="
+        display:none;position:absolute;left:0;right:0;z-index:100;
+        background:var(--surface);border:1.5px solid var(--accent);
+        border-top:none;border-radius:0 0 var(--rs) var(--rs);
+        max-height:200px;overflow-y:auto;
+      "></div>
     </div>
     <div class="fg" id="store-group" style="display:none;">
       <label class="fl">매장</label>
@@ -3690,6 +3698,62 @@ function updateStoreAutoToggle() {
   }
 }
 
+
+// ── 이름 커스텀 자동완성 ──
+let _nameList = []; // { name, store }
+
+async function loadNameList() {
+  if (_nameList.length) return;
+  if (members.length) {
+    _nameList = members.map(m => ({ name: m.name, store: m.store || '' }));
+  } else if (window.sb) {
+    const { data } = await sb.from('sidiz_members').select('name, store');
+    _nameList = (data || []).map(m => ({ name: m.name, store: m.store || '' }));
+  }
+}
+
+async function onNameInput(val) {
+  await loadNameList();
+  const dropdown = document.getElementById('name-dropdown');
+  if (!dropdown) return;
+
+  if (!val.trim()) { dropdown.style.display = 'none'; return; }
+
+  const filtered = _nameList.filter(m =>
+    m.name.includes(val) || m.name.toLowerCase().includes(val.toLowerCase())
+  ).slice(0, 8);
+
+  if (!filtered.length) { dropdown.style.display = 'none'; return; }
+
+  dropdown.style.display = 'block';
+  dropdown.innerHTML = filtered.map(m => `
+    <div onclick="selectName('${m.name}','${m.store}')" style="
+      padding:10px 14px;cursor:pointer;display:flex;align-items:center;
+      justify-content:space-between;font-size:14px;transition:background .1s;
+    "
+    onmouseover="this.style.background='var(--surface2)'"
+    onmouseout="this.style.background=''">
+      <span style="font-weight:600;color:var(--text);">${m.name}</span>
+      ${m.store ? `<span style="font-size:12px;color:var(--muted);">${m.store}</span>` : ''}
+    </div>`).join('');
+}
+
+function selectName(name, store) {
+  const inp = document.getElementById('inp-name');
+  if (inp) inp.value = name;
+  hideNameDropdown();
+  // 매장 자동완성
+  if (activeItem?.storeAuto) {
+    const storeSelect = document.getElementById('inp-store');
+    if (storeSelect && store) storeSelect.value = store;
+  }
+}
+
+function hideNameDropdown() {
+  const dropdown = document.getElementById('name-dropdown');
+  if (dropdown) dropdown.style.display = 'none';
+}
+
 async function autoFillStore(name) {
   if (!activeItem?.storeAuto) return;
   const storeSelect = document.getElementById('inp-store');
@@ -4418,9 +4482,8 @@ function updateStoreFilter() {
 }
 
 function updateMemberDatalist() {
-  // 응시자 이름 입력 자동완성
-  const dl = document.getElementById('member-name-datalist');
-  if (dl) dl.innerHTML = members.map(m=>`<option value="${m.name}">`).join('');
+  // 커스텀 드롭다운용 목록 갱신
+  _nameList = members.map(m => ({ name: m.name, store: m.store || '' }));
 }
 
 function renderMemberTable() {
@@ -5863,17 +5926,8 @@ function handleUrlParams() {
       }
     }
 
-    // 이름 자동완성용 datalist 채우기 (members 없으면 DB에서)
-    const dl = document.getElementById('member-name-datalist');
-    if (dl) {
-      if (members.length) {
-        dl.innerHTML = members.map(m=>`<option value="${m.name}">`).join('');
-      } else if (window.sb) {
-        sb.from('sidiz_members').select('name').then(({ data }) => {
-          if (dl) dl.innerHTML = (data||[]).map(m=>`<option value="${m.name}">`).join('');
-        });
-      }
-    }
+    // 이름 목록 미리 로드 (커스텀 드롭다운용)
+    loadNameList();
     loadIntro(item);
     showView('intro', false);
 
