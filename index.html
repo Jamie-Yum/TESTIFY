@@ -1166,6 +1166,9 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
           <div class="toggle-row"><div><div class="tgl-label">재시험 허용</div><div class="tgl-desc">동일 링크로 재응시 가능</div></div><button class="tgl" id="tgl-retake" onclick="this.classList.toggle('on')"></button></div>
           <div class="toggle-row" id="tgl-row-shuffle"><div><div class="tgl-label">보기 순서 랜덤</div><div class="tgl-desc">객관식 보기를 응시자마다 다르게 섞기</div></div><button class="tgl on" id="tgl-shuffle" onclick="this.classList.toggle('on')"></button></div>
           <div class="toggle-row" id="tgl-row-qshuffle"><div><div class="tgl-label">문제 순서 랜덤</div><div class="tgl-desc">응시자마다 문제 순서 다르게</div></div><button class="tgl" id="tgl-qshuffle" onclick="this.classList.toggle('on')"></button></div>
+          <div class="toggle-row"><div><div class="tgl-label">이름 수집</div><div class="tgl-desc">응시 시작 전 이름 입력란 표시 (시험은 항상 ON)</div></div><button class="tgl on" id="tgl-collect-name" onclick="this.classList.toggle('on')"></button></div>
+          <div class="toggle-row"><div><div class="tgl-label">매장 수집</div><div class="tgl-desc">응시 시작 전 매장 선택란 표시</div></div><button class="tgl" id="tgl-collect-store" onclick="this.classList.toggle('on');updateStoreAutoToggle()"></button></div>
+          <div class="toggle-row" id="tgl-row-store-auto" style="opacity:.5;pointer-events:none;"><div><div class="tgl-label">이름 선택 시 매장 자동완성</div><div class="tgl-desc">이름+매장 수집 둘 다 ON일 때 활성화</div></div><button class="tgl" id="tgl-store-auto" onclick="this.classList.toggle('on')"></button></div>
           <div class="fg" style="margin-top:20px;">
             <label class="fl">응시자 명단 (줄바꿈으로 구분)</label>
             <textarea class="fi" id="f-roster" rows="5" placeholder="홍길동&#10;김철수&#10;이영희"></textarea>
@@ -1311,7 +1314,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
             <table class="rtable">
               <thead>
   <tr>
-    <th>이름</th><th>시작</th><th>제출</th><th>소요</th>
+    <th>이름</th><th>매장</th><th>시작</th><th>제출</th><th>소요</th>
     <th>점수</th>
     <th>채점 점수<br><span style="font-size:10px;color:var(--dim);font-weight:400;">관리자 입력</span></th>
     <th>서술형</th>
@@ -1460,8 +1463,14 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
     <hr class="divider">
     <div class="fg" id="name-group">
       <label class="fl">이름</label>
-      <input class="intro-fi" id="inp-name" placeholder="홍길동" list="member-name-datalist"/>
+      <input class="intro-fi" id="inp-name" placeholder="홍길동" list="member-name-datalist" oninput="autoFillStore(this.value)"/>
       <datalist id="member-name-datalist"></datalist>
+    </div>
+    <div class="fg" id="store-group" style="display:none;">
+      <label class="fl">매장</label>
+      <select class="intro-fi" id="inp-store">
+        <option value="">매장을 선택하세요</option>
+      </select>
     </div>
     <div class="fg" id="pw-group">
       <label class="fl">응시 비밀번호</label>
@@ -2287,6 +2296,10 @@ function loadEditorFields(item) {
   document.getElementById('tgl-result').className = 'tgl' + (item.showResult?' on':'');
   document.getElementById('tgl-retake').className  = 'tgl' + (item.retake?' on':'');
   document.getElementById('tgl-shuffle').className = 'tgl' + (item.shuffleOpts?' on':'');
+  document.getElementById('tgl-collect-name').className = 'tgl' + (item.collectName!==false?' on':'');
+  document.getElementById('tgl-collect-store').className = 'tgl' + (item.collectStore?' on':'');
+  document.getElementById('tgl-store-auto').className = 'tgl' + (item.storeAuto?' on':'');
+  updateStoreAutoToggle();
   document.getElementById('tgl-qshuffle').className= 'tgl' + (item.shuffleQ?' on':'');
   document.getElementById('f-roster').value = (item.roster || []).join('\n');
   document.getElementById('f-thank-msg').value = item.thankMsg || '';
@@ -2328,6 +2341,9 @@ function saveItem() {
   item.showResult = document.getElementById('tgl-result').classList.contains('on');
   item.retake     = document.getElementById('tgl-retake').classList.contains('on');
   item.shuffleOpts= document.getElementById('tgl-shuffle').classList.contains('on');
+  item.collectName  = document.getElementById('tgl-collect-name').classList.contains('on');
+  item.collectStore = document.getElementById('tgl-collect-store').classList.contains('on');
+  item.storeAuto    = document.getElementById('tgl-store-auto').classList.contains('on');
   item.shuffleQ   = document.getElementById('tgl-qshuffle').classList.contains('on');
   item.status = 'live';
   item.openAt    = document.getElementById('f-open-at').value || '';
@@ -3474,6 +3490,7 @@ async function showResultDetail(itemId) {
 
       return `<tr>
         <td style="font-weight:600;">${r.name}</td>
+        <td style="color:var(--muted);font-size:12px;">${r.store||'—'}</td>
         <td style="color:var(--muted);">${r.startTime||'—'}</td>
         <td style="color:var(--muted);">${r.time}</td>
         <td style="color:${r.duration.includes('초과')?'var(--accent3)':'var(--muted)'};">${r.duration}</td>
@@ -3568,13 +3585,52 @@ function loadIntro(item) {
   startBtn.textContent = isSurvey ? '설문 시작하기 →' : '시험 시작하기 →';
   startBtn.className = 'btn-start' + (isSurvey?' survey-start':'');
 
+  // 이름 수집 설정
+  const collectName = isSurvey ? (item.collectName !== false) : true;
+  const collectStore = item.collectStore === true;
+  const storeAuto = item.storeAuto === true && collectName && collectStore;
+
   const nameGroup = document.getElementById('name-group');
-  if (nameGroup) nameGroup.style.display = isSurvey ? 'none' : '';
+  const storeGroup = document.getElementById('store-group');
+  if (nameGroup) nameGroup.style.display = collectName ? '' : 'none';
+  if (storeGroup) storeGroup.style.display = collectStore ? '' : 'none';
+
   const inp = document.getElementById('inp-name');
   inp.className = 'intro-fi' + (isSurvey?' survey-fi':'');
-  if (isSurvey) inp.value = '익명';
+  if (!collectName) inp.value = '익명';
+  else inp.value = '';
+
+  // 매장 드롭다운 채우기 (SE 명단의 매장 목록)
+  const storeSelect = document.getElementById('inp-store');
+  if (storeSelect && collectStore) {
+    const stores = [...new Set(members.map(m=>m.store).filter(Boolean))].sort();
+    storeSelect.innerHTML = '<option value="">매장을 선택하세요</option>' +
+      stores.map(s => `<option value="${s}">${s}</option>`).join('');
+    storeSelect.className = 'intro-fi' + (isSurvey?' survey-fi':'');
+  }
+
   const pw = document.getElementById('inp-pw');
   pw.className = 'intro-fi' + (isSurvey?' survey-fi':'');
+}
+
+
+function updateStoreAutoToggle() {
+  const collectStore = document.getElementById('tgl-collect-store')?.classList.contains('on');
+  const collectName  = document.getElementById('tgl-collect-name')?.classList.contains('on');
+  const row = document.getElementById('tgl-row-store-auto');
+  if (row) {
+    const active = collectStore && collectName;
+    row.style.opacity = active ? '1' : '0.5';
+    row.style.pointerEvents = active ? '' : 'none';
+    if (!active) document.getElementById('tgl-store-auto')?.classList.remove('on');
+  }
+}
+
+function autoFillStore(name) {
+  if (!activeItem?.storeAuto) return;
+  const m = members.find(m => m.name === name);
+  const storeSelect = document.getElementById('inp-store');
+  if (m && storeSelect) storeSelect.value = m.store || '';
 }
 
 // ══════════════════════════════════════
@@ -3608,10 +3664,16 @@ function startExam() {
   const pw   = document.getElementById('inp-pw').value.trim();
   const err  = document.getElementById('inp-err');
   const isSurveyStart = activeItem.mode === 'survey';
+  const collectName = isSurveyStart ? (activeItem.collectName !== false) : true;
+  const collectStore = activeItem.collectStore === true;
+
   if (!isSurveyStart && !name) { err.classList.add('show'); return; }
+  if (isSurveyStart && collectName && !name) { err.classList.add('show'); return; }
+  if (collectStore && !document.getElementById('inp-store').value) { err.classList.add('show'); return; }
   if (activeItem.pw && pw !== activeItem.pw) { err.classList.add('show'); return; }
   err.classList.remove('show');
-  examineeName = name;
+  examineeName = collectName ? name : '익명';
+  window._examStore = collectStore ? document.getElementById('inp-store').value : null;
   currentQ = 0; answers = {}; tabWarnCount = 0;
   timeLeft = activeItem.time * 60;
 
@@ -4095,7 +4157,7 @@ function doSubmit() {
   const durationSecs = Math.round((new Date() - examStartedAt) / 1000);
   if (!isPreviewMode) {
     saveResponseToDB(activeItem.id, examineeName, answers, score,
-      examStartedAt.toISOString(), durationSecs, tabWarnCount);
+      examStartedAt.toISOString(), durationSecs, tabWarnCount, window._examStore || null);
   }
   showResult(score,ok,ng,pend,items2,isSurvey);
 }
@@ -5277,6 +5339,7 @@ async function loadAnswerKeyView(shareId) {
   }
 }
 
+// store_auto 컬럼: ALTER TABLE sidiz_exams ADD COLUMN IF NOT EXISTS store_auto BOOLEAN DEFAULT FALSE;
 // ── 관리자: 시험 목록 로드 ──
 async function loadExamsFromDB() {
   if (!window.sb) { console.warn('Supabase 미연결'); return; }
@@ -5307,6 +5370,9 @@ async function loadExamsFromDB() {
       retake: e.retake,
       shuffleOpts: e.shuffle_options,
       shuffleQ: e.shuffle_questions,
+      collectName:  e.collect_name !== false,
+      collectStore: e.collect_store || false,
+      storeAuto:    e.store_auto || false,
       status: e.status,
       roster: e.roster || [],
       thankMsg: e.thank_msg || '',
@@ -5402,6 +5468,9 @@ async function saveItemToDB(item) {
       retake: item.retake,
       shuffle_options: item.shuffleOpts,
       shuffle_questions: item.shuffleQ,
+      collect_name: item.collectName !== false,
+      collect_store: item.collectStore || false,
+      store_auto: item.storeAuto || false,
       status: item.status,
       roster: item.roster || [],
       thank_msg: item.thankMsg || null,
@@ -5450,7 +5519,7 @@ async function deleteItemFromDB(itemId) {
 }
 
 // ── 응시 결과 저장 ──
-async function saveResponseToDB(examId, name, answers, score, startTime, durationSecs, tabWarnings) {
+async function saveResponseToDB(examId, name, answers, score, startTime, durationSecs, tabWarnings, store) {
   if (!window.sb) return;
   try {
     const { error } = await sb.from('sidiz_responses').insert({
@@ -5462,6 +5531,7 @@ async function saveResponseToDB(examId, name, answers, score, startTime, duratio
       submitted_at: new Date().toISOString(),
       duration_seconds: durationSecs,
       tab_warnings: tabWarnings,
+      store: store || null,
     });
     if (error) console.warn('결과 저장 오류:', error.message);
     else console.log('✅ 응시 결과 저장 완료:', name);
@@ -5541,6 +5611,7 @@ async function loadResponsesFromDB(examId) {
         gradingDone: false,
         answers,
         tabWarnings: r.tab_warnings || 0,
+        store: r.store || null,
         id: r.id,
       };
     });
