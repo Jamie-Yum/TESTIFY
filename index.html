@@ -1355,6 +1355,11 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
     <!-- 검색 / 필터 -->
     <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
       <input class="fi" id="member-search" placeholder="이름·매장·역할 검색..." style="flex:1;min-width:160px;" oninput="renderMemberTable()"/>
+      <select class="fi" id="member-store-type-filter" style="width:130px;" onchange="renderMemberTable()">
+        <option value="">전체 매장형태</option>
+        <option value="더프 매장">더프 매장</option>
+        <option value="입점몰">입점몰</option>
+      </select>
       <select class="fi" id="member-store-filter" style="width:150px;" onchange="renderMemberTable()">
         <option value="">전체 매장</option>
       </select>
@@ -1383,12 +1388,31 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
       </select>
     </div>
 
+    <!-- 열 퀵 토글 -->
+    <div id="col-quick-toggle" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+
     <!-- 테이블 -->
-    <div class="rtable-wrap" id="member-table-wrap">
-      <table class="rtable" id="member-table">
-        <thead id="member-thead"></thead>
-        <tbody id="member-tbody"></tbody>
-      </table>
+    <div style="position:relative;">
+      <button onclick="memberTableScroll(-200)" style="
+        position:absolute;left:-16px;top:50%;transform:translateY(-50%);z-index:10;
+        width:32px;height:32px;border-radius:50%;background:var(--surface2);
+        border:1px solid var(--border);color:var(--muted);cursor:pointer;
+        display:flex;align-items:center;justify-content:center;font-size:16px;
+        transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.2);"
+        onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">‹</button>
+      <div class="rtable-wrap" id="member-table-wrap" style="scroll-behavior:smooth;">
+        <table class="rtable" id="member-table">
+          <thead id="member-thead"></thead>
+          <tbody id="member-tbody"></tbody>
+        </table>
+      </div>
+      <button onclick="memberTableScroll(200)" style="
+        position:absolute;right:-16px;top:50%;transform:translateY(-50%);z-index:10;
+        width:32px;height:32px;border-radius:50%;background:var(--surface2);
+        border:1px solid var(--border);color:var(--muted);cursor:pointer;
+        display:flex;align-items:center;justify-content:center;font-size:16px;
+        transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.2);"
+        onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">›</button>
     </div>
   </div>
 `);
@@ -4157,6 +4181,7 @@ let memberSortAsc = true;
 let memberColumns = {
   _check:      { label:'',          show:true,  sortable:false },
   name:        { label:'이름',      show:true,  sortable:true },
+  store_type:  { label:'매장형태',  show:true,  sortable:true,  computed:true },
   store:       { label:'매장',      show:true,  sortable:true },
   phone:       { label:'연락처',    show:true,  sortable:false },
   email:       { label:'이메일',    show:false, sortable:false },
@@ -4176,7 +4201,7 @@ let memberColumns = {
 // DB에서 불러온 동적 커스텀 컬럼
 let dynamicColumns = []; // [{ id, key, label, type, sort_order }]
 
-const FIXED_COLS = ['_check','name','store','phone','email','employment','role','hire_date','tenure','retro_count','seat1_score','memo'];
+const FIXED_COLS = ['_check','name','store_type','store','phone','email','employment','role','hire_date','tenure','retro_count','seat1_score','memo'];
 
 
 // SEAT1 점수 캐시 { 이름: 종합점수 }
@@ -4198,6 +4223,13 @@ async function loadSeat1Scores() {
       seat1ScoreMap[r.examinee_name] = total;
     });
   } catch(e) { console.warn('SEAT1 점수 로드 실패:', e.message); }
+}
+
+
+const DP_STORES = ['논현','대구','대전','마곡','성수','센텀','송파','평택','합정'];
+function getStoreType(store) {
+  if (!store) return '—';
+  return DP_STORES.includes(store) ? '더프 매장' : '입점몰';
 }
 
 // 응대회고는 sidiz_reflections 테이블 기반으로 관리됨
@@ -4259,6 +4291,7 @@ function updateMemberDatalist() {
 
 function renderMemberTable() {
   const search = (document.getElementById('member-search')?.value || '').toLowerCase();
+  const storeTypeF  = document.getElementById('member-store-type-filter')?.value || '';
   const storeF      = document.getElementById('member-store-filter')?.value || '';
   const eduBase     = document.getElementById('filter-edu-base')?.value || '';
   const eduB2b      = document.getElementById('filter-edu-b2b')?.value || '';
@@ -4270,12 +4303,13 @@ function renderMemberTable() {
       (m.name||'').toLowerCase().includes(search) ||
       (m.store||'').toLowerCase().includes(search) ||
       (m.role||'').toLowerCase().includes(search);
+    const matchStoreType = !storeTypeF || getStoreType(m.store) === storeTypeF;
     const matchStore = !storeF || m.store === storeF;
     const matchBase    = !eduBase    || (eduBase==='O' ? m.edu_base==='O' : m.edu_base!=='O');
     const matchB2b     = !eduB2b     || (eduB2b==='O' ? m.edu_b2b==='O' : m.edu_b2b!=='O');
     const matchSit     = !eduSit     || (eduSit==='O' ? m.edu_situation==='O' : m.edu_situation!=='O');
     const matchFactory = !eduFactory || (eduFactory==='O' ? m.edu_factory==='O' : m.edu_factory!=='O');
-    return matchS && matchStore && matchBase && matchB2b && matchSit && matchFactory;
+    return matchS && matchStoreType && matchStore && matchBase && matchB2b && matchSit && matchFactory;
   });
 
   // 정렬
@@ -4285,6 +4319,11 @@ function renderMemberTable() {
       av = a.hire_date ? new Date(a.hire_date).getTime() : 0;
       bv = b.hire_date ? new Date(b.hire_date).getTime() : 0;
       return memberSortAsc ? av - bv : bv - av;
+    }
+    if (memberSortKey === 'store_type') {
+      av = getStoreType(a.store);
+      bv = getStoreType(b.store);
+      return memberSortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
     }
     if (memberSortKey === 'seat1_score') {
       av = seat1ScoreMap[a.name] ?? -1;
@@ -4320,6 +4359,21 @@ function renderMemberTable() {
   }).join('')}<th>관리</th></tr>`;
 
   // 바디
+  // 열 퀵 토글 바 렌더
+  const quickToggle = document.getElementById('col-quick-toggle');
+  if (quickToggle) {
+    quickToggle.innerHTML = Object.entries(memberColumns)
+      .filter(([k]) => k !== '_check')
+      .map(([k, v]) => `
+        <button onclick="toggleMemberCol('${k}')" style="
+          padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;
+          font-family:Pretendard,sans-serif;transition:all .15s;
+          background:${v.show ? 'var(--accent)' : 'var(--surface2)'};
+          color:${v.show ? '#fff' : 'var(--muted)'};
+          border:1px solid ${v.show ? 'var(--accent)' : 'var(--border)'};
+        ">${v.label||k}</button>`).join('');
+  }
+
   tbody.innerHTML = filtered.length
     ? filtered.map(m => {
         const tenureText = calcTenure(m.hire_date);
@@ -4343,6 +4397,11 @@ function renderMemberTable() {
               const cls = s >= 80 ? 'sp-hi' : s >= 60 ? 'sp-mid' : 'sp-lo';
               return `<td><span class="spill ${cls}">${s}점</span></td>`;
             }
+            if (k==='store_type') {
+              const t = getStoreType(m.store);
+              const color = t==='더프 매장' ? 'var(--accent)' : 'var(--accent2)';
+              return `<td><span style="font-size:11px;font-weight:700;color:${color};">${t}</span></td>`;
+            }
             if (k==='hire_date') return `<td>${m.hire_date||'—'}</td>`;
             if (k==='employment') return `<td>${empBadge}</td>`;
             return `<td>${m[k]??'—'}</td>`;
@@ -4357,6 +4416,20 @@ function renderMemberTable() {
         <div style="font-size:24px;margin-bottom:8px;">👥</div>등록된 SE가 없습니다.</td></tr>`;
 }
 
+
+
+function toggleMemberCol(key) {
+  if (memberColumns[key]) {
+    memberColumns[key].show = !memberColumns[key].show;
+    renderMemberTable();
+  }
+}
+
+function memberTableScroll(amount) {
+  const wrap = document.getElementById('member-table-wrap');
+  if (wrap) wrap.scrollLeft += amount;
+}
+
 function sortMembers(key) {
   if (memberSortKey === key) memberSortAsc = !memberSortAsc;
   else { memberSortKey = key; memberSortAsc = true; }
@@ -4369,6 +4442,7 @@ function toggleAllMemberCheck(el) {
 
 function clearMemberFilters() {
   document.getElementById('member-search').value = '';
+  document.getElementById('member-store-type-filter').value = '';
   document.getElementById('member-store-filter').value = '';
   const eduFilters = ['filter-edu-base','filter-edu-b2b','filter-edu-situation','filter-edu-factory'];
   eduFilters.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
@@ -4404,6 +4478,7 @@ function executeCopy() {
   const includeHeader = document.getElementById('copy-include-header')?.checked;
   const rows = selected.map(m => selectedCols.map(c => {
     if (c.key==='tenure') return calcTenure(m.hire_date);
+    if (c.key==='store_type') return getStoreType(m.store);
     if (c.key==='retro_count') return calcRetroCount(m) > 0 ? `${calcRetroCount(m)}개` : '—';
     if (c.key==='seat1_score') return seat1ScoreMap[m.name] !== undefined ? seat1ScoreMap[m.name] + '점' : '—';
     if (c.key==='seat1_score') return seat1ScoreMap[m.name] !== undefined ? seat1ScoreMap[m.name] + '점' : '—';
