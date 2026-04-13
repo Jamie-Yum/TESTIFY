@@ -3690,11 +3690,17 @@ function updateStoreAutoToggle() {
   }
 }
 
-function autoFillStore(name) {
+async function autoFillStore(name) {
   if (!activeItem?.storeAuto) return;
-  const m = members.find(m => m.name === name);
   const storeSelect = document.getElementById('inp-store');
-  if (m && storeSelect) storeSelect.value = m.store || '';
+  if (!storeSelect) return;
+  // members 있으면 바로 사용, 없으면 DB에서 조회
+  let m = members.find(m => m.name === name);
+  if (!m && window.sb) {
+    const { data } = await sb.from('sidiz_members').select('name, store').eq('name', name).single();
+    m = data;
+  }
+  if (m) storeSelect.value = m.store || '';
 }
 
 // ══════════════════════════════════════
@@ -5857,6 +5863,17 @@ function handleUrlParams() {
       }
     }
 
+    // 이름 자동완성용 datalist 채우기 (members 없으면 DB에서)
+    const dl = document.getElementById('member-name-datalist');
+    if (dl) {
+      if (members.length) {
+        dl.innerHTML = members.map(m=>`<option value="${m.name}">`).join('');
+      } else if (window.sb) {
+        sb.from('sidiz_members').select('name').then(({ data }) => {
+          if (dl) dl.innerHTML = (data||[]).map(m=>`<option value="${m.name}">`).join('');
+        });
+      }
+    }
     loadIntro(item);
     showView('intro', false);
 
