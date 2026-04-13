@@ -4165,6 +4165,7 @@ let memberColumns = {
   hire_date:   { label:'입사일',    show:true,  sortable:true },
   tenure:      { label:'근무기간',  show:true,  sortable:true,  computed:true },
   retro_count: { label:'응대회고',  show:true,  sortable:true,  computed:true },
+  seat1_score:  { label:'SEAT1 점수', show:true, sortable:true,  computed:true },
   memo:        { label:'메모',      show:false, sortable:false },
   edu_base:     { label:'BASE',      show:true,  sortable:true },
   edu_b2b:      { label:'B2B',       show:true,  sortable:true },
@@ -4175,7 +4176,29 @@ let memberColumns = {
 // DB에서 불러온 동적 커스텀 컬럼
 let dynamicColumns = []; // [{ id, key, label, type, sort_order }]
 
-const FIXED_COLS = ['_check','name','store','phone','email','employment','role','hire_date','tenure','retro_count','memo'];
+const FIXED_COLS = ['_check','name','store','phone','email','employment','role','hire_date','tenure','retro_count','seat1_score','memo'];
+
+
+// SEAT1 점수 캐시 { 이름: 종합점수 }
+let seat1ScoreMap = {};
+
+async function loadSeat1Scores() {
+  if (!window.sb) return;
+  try {
+    const SEAT1_EXAM_ID = 'i_se2025';
+    const { data } = await sb.from('sidiz_responses')
+      .select('examinee_name, score, manual_score, essay_score')
+      .eq('exam_id', SEAT1_EXAM_ID);
+    seat1ScoreMap = {};
+    (data || []).forEach(r => {
+      const total = r.manual_score !== null && r.manual_score !== undefined
+        ? r.manual_score + (r.essay_score || 0)
+        : r.score || 0;
+      // 같은 이름이 여러 개면 최신(마지막) 값 사용
+      seat1ScoreMap[r.examinee_name] = total;
+    });
+  } catch(e) { console.warn('SEAT1 점수 로드 실패:', e.message); }
+}
 
 // 응대회고는 sidiz_reflections 테이블 기반으로 관리됨
 let editingMemberId = null;
@@ -4206,7 +4229,7 @@ async function loadMembers() {
     }
 
     // 세션 + 회고 데이터 병렬 로드
-    await Promise.all([loadReflectionSessions(), loadAllReflections()]);
+    await Promise.all([loadReflectionSessions(), loadAllReflections(), loadSeat1Scores()]);
 
     const { data, error } = await sb.from('sidiz_members').select('*').order('created_at', { ascending: true });
     if (error) { console.warn('명단 로드 오류:', error.message); return; }
@@ -4263,6 +4286,11 @@ function renderMemberTable() {
       bv = b.hire_date ? new Date(b.hire_date).getTime() : 0;
       return memberSortAsc ? av - bv : bv - av;
     }
+    if (memberSortKey === 'seat1_score') {
+      av = seat1ScoreMap[a.name] ?? -1;
+      bv = seat1ScoreMap[b.name] ?? -1;
+      return memberSortAsc ? av - bv : bv - av;
+    }
     if (memberSortKey === 'retro_count') {
       av = calcRetroCount(a);
       bv = calcRetroCount(b);
@@ -4309,6 +4337,12 @@ function renderMemberTable() {
             if (k==='_check') return `<td><input type="checkbox" class="member-check" data-id="${m.id}"/></td>`;
             if (k==='tenure') return `<td>${tenureText}</td>`;
             if (k==='retro_count') return `<td style="cursor:pointer;" onclick="openRetroModal('${m.id}')" title="회고 현황 보기/편집">${retroText}</td>`;
+            if (k==='seat1_score') {
+              const s = seat1ScoreMap[m.name];
+              if (s === undefined) return `<td><span style="color:var(--dim);">—</span></td>`;
+              const cls = s >= 80 ? 'sp-hi' : s >= 60 ? 'sp-mid' : 'sp-lo';
+              return `<td><span class="spill ${cls}">${s}점</span></td>`;
+            }
             if (k==='hire_date') return `<td>${m.hire_date||'—'}</td>`;
             if (k==='employment') return `<td>${empBadge}</td>`;
             return `<td>${m[k]??'—'}</td>`;
@@ -4371,6 +4405,8 @@ function executeCopy() {
   const rows = selected.map(m => selectedCols.map(c => {
     if (c.key==='tenure') return calcTenure(m.hire_date);
     if (c.key==='retro_count') return calcRetroCount(m) > 0 ? `${calcRetroCount(m)}개` : '—';
+    if (c.key==='seat1_score') return seat1ScoreMap[m.name] !== undefined ? seat1ScoreMap[m.name] + '점' : '—';
+    if (c.key==='seat1_score') return seat1ScoreMap[m.name] !== undefined ? seat1ScoreMap[m.name] + '점' : '—';
     return m[c.key] ?? '—';
   }).join('\t'));
 
