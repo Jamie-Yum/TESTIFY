@@ -5518,7 +5518,7 @@ function clearAllResponses() {
 // URL 파라미터 있으면 랜딩 즉시 숨김 (깜빡임 방지)
 (function() {
   const params = new URLSearchParams(window.location.search);
-  if (params.get('test') || params.get('admin')) {
+  if (params.get('test') || params.get('admin') || params.get('answerkey')) {
     document.getElementById('view-landing').style.display = 'none';
   }
 })();
