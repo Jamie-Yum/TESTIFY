@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TESTIFY — 시디즈 사내 시험 플랫폼</title>
+<title>SIT FOREST — 시디즈 사내 시험 플랫폼</title>
 <meta name="description" content="시디즈 사내 시험 & 설문 플랫폼 — 출제부터 결과 분석까지">
-<meta property="og:title" content="TESTIFY — 시디즈 사내 시험 플랫폼">
-<meta property="og:description" content="출제부터 결과 분석까지, 시디즈 전용 시험 플랫폼">
+<meta property="og:title" content="SIT FOREST — 시디즈 사내 시험 플랫폼">
+<meta property="og:description" content="SE들이 함께 자라는 숲, 시디즈 전용 시험·설문 플랫폼">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://jamie-yum.github.io/testify/og-image.png">
-<meta name="theme-color" content="#003EFF">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23003EFF'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23003EFF'/%3E%3Ctext x='90' y='130' font-family='Georgia,serif' font-size='110' font-weight='bold' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#1B4332">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27><rect width=%2764%27 height=%2764%27 rx=%2732%27 fill=%27%231B4332%27/><rect x=%274%27 y=%2734%27 width=%273%27 height=%2718%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%275%27 cy=%2730%27 r=%277%27 fill=%27%2340916C%27/><rect x=%2755%27 y=%2736%27 width=%273%27 height=%2716%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%2756%27 cy=%2732%27 r=%276%27 fill=%27%2352B788%27/><rect x=%2747%27 y=%2738%27 width=%273%27 height=%2714%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%2748%27 cy=%2734%27 r=%275%27 fill=%27%2340916C%27/><rect x=%2719%27 y=%2742%27 width=%2724%27 height=%274%27 rx=%272%27 fill=%27%2374C69D%27/><rect x=%2735%27 y=%2730%27 width=%273%27 height=%2714%27 rx=%271.5%27 fill=%27%2374C69D%27/><rect x=%2719%27 y=%2746%27 width=%273%27 height=%279%27 rx=%271.5%27 fill=%27%2352B788%27/><rect x=%2737%27 y=%2746%27 width=%273%27 height=%279%27 rx=%271.5%27 fill=%27%2352B788%27/><circle cx=%2728%27 cy=%2727%27 r=%275%27 fill=%27white%27/><rect x=%2722%27 y=%2732%27 width=%2712%27 height=%2710%27 rx=%273%27 fill=%27white%27/><rect x=%2722%27 y=%2742%27 width=%274%27 height=%278%27 rx=%272%27 fill=%27rgba(255,255,255,0.7)%27/><rect x=%2729%27 y=%2742%27 width=%274%27 height=%278%27 rx=%272%27 fill=%27rgba(255,255,255,0.7)%27/></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27><rect width=%2764%27 height=%2764%27 rx=%2732%27 fill=%27%231B4332%27/><rect x=%274%27 y=%2734%27 width=%273%27 height=%2718%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%275%27 cy=%2730%27 r=%277%27 fill=%27%2340916C%27/><rect x=%2755%27 y=%2736%27 width=%273%27 height=%2716%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%2756%27 cy=%2732%27 r=%276%27 fill=%27%2352B788%27/><rect x=%2747%27 y=%2738%27 width=%273%27 height=%2714%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%2748%27 cy=%2734%27 r=%275%27 fill=%27%2340916C%27/><rect x=%2719%27 y=%2742%27 width=%2724%27 height=%274%27 rx=%272%27 fill=%27%2374C69D%27/><rect x=%2735%27 y=%2730%27 width=%273%27 height=%2714%27 rx=%271.5%27 fill=%27%2374C69D%27/><rect x=%2719%27 y=%2746%27 width=%273%27 height=%279%27 rx=%271.5%27 fill=%27%2352B788%27/><rect x=%2737%27 y=%2746%27 width=%273%27 height=%279%27 rx=%271.5%27 fill=%27%2352B788%27/><circle cx=%2728%27 cy=%2727%27 r=%275%27 fill=%27white%27/><rect x=%2722%27 y=%2732%27 width=%2712%27 height=%2710%27 rx=%273%27 fill=%27white%27/><rect x=%2722%27 y=%2742%27 width=%274%27 height=%278%27 rx=%272%27 fill=%27rgba(255,255,255,0.7)%27/><rect x=%2729%27 y=%2742%27 width=%274%27 height=%278%27 rx=%272%27 fill=%27rgba(255,255,255,0.7)%27/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Raleway:wght@300;400;600;700;800&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -62,7 +62,15 @@ body.light-mode .topbar,
 body.light-mode .exam-footer,
 body.light-mode .prog-bar-wrap { background:rgba(240,244,255,.96); }
 body.light-mode .preview-banner { background:rgba(0,62,255,.07); border-color:rgba(0,62,255,.2); }
-body.light-mode #view-landing::before { background:radial-gradient(circle,rgba(0,62,255,.07) 0%,transparent 65%); }
+body.light-mode #view-landing { background:#e8f5e9; }
+body.light-mode #view-landing::before { background:radial-gradient(ellipse at 50% 40%,rgba(27,67,50,.06) 0%,transparent 60%); }
+body.light-mode .landing-logo { color:#1B4332; }
+body.light-mode .landing-logo span { color:#2D6A4F; }
+body.light-mode .landing-card { background:rgba(255,255,255,0.75) !important; border-color:rgba(45,106,79,0.25) !important; }
+body.light-mode .lc-title { color:#1B4332; }
+body.light-mode .lc-desc { color:#40916C; }
+body.light-mode .lc-arrow { color:#2D6A4F; }
+body.light-mode .landing-footer { color:#52B788 !important; }
 body.light-mode .sidebar { background:var(--surface); }
 body.light-mode .mobile-top-bar { background:rgba(240,244,255,.96); }
 body.light-mode .landing-card { box-shadow:0 4px 24px rgba(0,62,255,.08); }
@@ -80,33 +88,28 @@ body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);
    LANDING
 ══════════════════════════════════════ */
 #view-landing{
-  background:var(--bg);position:relative;overflow:hidden;
+  background:#071a07;position:relative;overflow:hidden;
 }
 #view-landing::before{
-  content:'';position:absolute;width:700px;height:700px;
-  background:radial-gradient(circle,rgba(53,127,255,.07) 0%,transparent 65%);
-  top:-200px;left:-100px;pointer-events:none;
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 40%,rgba(82,183,136,.08) 0%,transparent 60%);
 }
-#view-landing::after{
-  content:'';position:absolute;width:500px;height:500px;
-  background:radial-gradient(circle,rgba(96,196,240,.05) 0%,transparent 65%);
-  bottom:-100px;right:-50px;pointer-events:none;
-}
+#view-landing::after{ content:''; }
 .landing-inner{
   text-align:center;position:relative;z-index:1;
   animation:fadeUp .6s ease;
 }
 .landing-logo{
-  font-family:'DM Serif Display',serif;font-size:64px;letter-spacing:-3px;
+  font-family:'Raleway',sans-serif;font-size:60px;letter-spacing:8px;font-weight:800;
   color:var(--text);margin-bottom:10px;line-height:1;
 }
-.landing-logo span{color:var(--accent);}
+.landing-logo span{color:#52B788;}
 .landing-tagline{font-size:15px;color:var(--muted);font-weight:300;margin-bottom:12px;}
 .landing-sub{
   display:inline-flex;align-items:center;gap:6px;
   font-size:12px;color:var(--dim);margin-bottom:52px;
 }
-.landing-sub-dot{width:5px;height:5px;background:var(--accent);border-radius:50%;display:inline-block;}
+.landing-sub-dot{width:5px;height:5px;background:#52B788;border-radius:50%;display:inline-block;}
 
 .landing-cards{display:flex;gap:20px;justify-content:center;}
 .landing-card{
@@ -118,7 +121,7 @@ body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);
   content:'';position:absolute;top:0;left:0;right:0;height:3px;
   transition:opacity .2s;opacity:0;
 }
-.landing-card.admin-card::before{background:var(--accent);}
+.landing-card.admin-card::before{background:#52B788;}
 .landing-card.exam-card::before{background:var(--accent2);}
 .landing-card:hover{border-color:var(--border2);transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.4);}
 .landing-card:hover::before{opacity:1;}
@@ -130,7 +133,7 @@ body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);
 
 .landing-footer{
   position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
-  font-size:11px;color:var(--dim);white-space:nowrap;
+  font-size:13px;color:var(--dim);white-space:nowrap;
 }
 
 /* ══════════════════════════════════════
@@ -143,7 +146,7 @@ body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);
 .main{flex:1;margin-left:228px;padding:32px 36px;min-height:100vh;}
 
 .sb-logo{
-  font-family:'DM Serif Display',serif;font-size:20px;padding:22px 20px;
+  font-family:'Raleway',sans-serif;font-size:18px;letter-spacing:4px;font-weight:800;padding:22px 20px;
   border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;
 }
 .sb-logo span{color:var(--accent);}
@@ -342,12 +345,14 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .share-url{font-size:12px;color:var(--accent2);font-family:monospace;background:var(--surface2);padding:9px 13px;border-radius:var(--rs);margin:10px 0;word-break:break-all;}
 
 /* ══ RESULTS TABLE ══ */
-.rtable-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);}
+.rtable-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);display:block;width:100%;}
 .rtable{width:100%;border-collapse:collapse;}
-.rtable.member-table{white-space:nowrap;table-layout:auto;}
+.rtable.member-table{white-space:nowrap;table-layout:auto;width:auto;min-width:100%;}
 .rtable.member-table td,.rtable.member-table th{white-space:nowrap;}
-.rtable.member-table th:last-child,.rtable.member-table td:last-child{position:sticky;right:0;background:var(--surface);z-index:2;}
+.rtable.member-table th:last-child,.rtable.member-table td:last-child{position:sticky;right:0;background:var(--surface);z-index:2;box-shadow:-2px 0 4px rgba(0,0,0,.1);}
 .rtable.member-table thead th:last-child{background:var(--surface2);}
+.rtable.nowrap td,.rtable.nowrap th{white-space:nowrap;}
+.rtable.nowrap{width:auto;min-width:100%;}
 .rtable th{background:var(--surface2);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);border-bottom:1px solid var(--border);}
 .rtable td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13.5px;}
 .rtable tr:last-child td{border-bottom:none;}
@@ -991,29 +996,66 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 </div>
 
 <div id="view-landing" class="view active">
-  <div class="landing-inner">
-    <div class="landing-logo">TEST<span>IFY</span></div>
-    <div class="landing-tagline">시디즈 사내 시험 & 설문 플랫폼</div>
-    <div class="landing-sub"><span class="landing-sub-dot"></span>출제부터 결과 분석까지</div>
+
+  <!-- 나무 실루엣 배경 -->
+  <svg style="position:absolute;bottom:0;left:0;width:100%;pointer-events:none;z-index:0;" viewBox="0 0 1200 280" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
+    <rect x="0" y="230" width="1200" height="50" fill="#0a200a"/>
+    <rect x="30" y="110" width="22" height="120" rx="5" fill="#1a2e1a"/>
+    <ellipse cx="41" cy="95" rx="32" ry="42" fill="#0d1f0d"/>
+    <ellipse cx="41" cy="75" rx="26" ry="34" fill="#1B4332"/>
+    <ellipse cx="41" cy="58" rx="20" ry="26" fill="#2D6A4F"/>
+    <rect x="130" y="140" width="16" height="90" rx="4" fill="#1a2e1a"/>
+    <ellipse cx="138" cy="128" rx="24" ry="30" fill="#0d1f0d"/>
+    <ellipse cx="138" cy="112" rx="19" ry="24" fill="#2D6A4F"/>
+    <rect x="210" y="155" width="12" height="75" rx="3" fill="#1a2e1a"/>
+    <ellipse cx="216" cy="145" rx="18" ry="22" fill="#1B4332"/>
+    <ellipse cx="216" cy="132" rx="14" ry="17" fill="#2D6A4F"/>
+    <rect x="320" y="130" width="18" height="100" rx="4" fill="#1a2e1a"/>
+    <ellipse cx="329" cy="116" rx="27" ry="35" fill="#0d1f0d"/>
+    <ellipse cx="329" cy="98" rx="21" ry="27" fill="#1B4332"/>
+    <ellipse cx="329" cy="82" rx="16" ry="20" fill="#40916C"/>
+    <rect x="430" y="160" width="10" height="70" rx="3" fill="#1a2e1a"/>
+    <ellipse cx="435" cy="150" rx="15" ry="19" fill="#2D6A4F"/>
+    <rect x="880" y="120" width="20" height="110" rx="5" fill="#1a2e1a"/>
+    <ellipse cx="890" cy="105" rx="30" ry="38" fill="#0d1f0d"/>
+    <ellipse cx="890" cy="87" rx="24" ry="30" fill="#1B4332"/>
+    <ellipse cx="890" cy="70" rx="18" ry="23" fill="#2D6A4F"/>
+    <rect x="980" y="145" width="14" height="85" rx="3" fill="#1a2e1a"/>
+    <ellipse cx="987" cy="133" rx="21" ry="26" fill="#0d1f0d"/>
+    <ellipse cx="987" cy="118" rx="16" ry="20" fill="#1B4332"/>
+    <rect x="1060" y="100" width="22" height="130" rx="5" fill="#1a2e1a"/>
+    <ellipse cx="1071" cy="84" rx="33" ry="42" fill="#0d1f0d"/>
+    <ellipse cx="1071" cy="66" rx="26" ry="33" fill="#1B4332"/>
+    <ellipse cx="1071" cy="50" rx="20" ry="25" fill="#40916C"/>
+    <rect x="1140" y="150" width="14" height="80" rx="3" fill="#1a2e1a"/>
+    <ellipse cx="1147" cy="139" rx="20" ry="24" fill="#2D6A4F"/>
+  </svg>
+
+  <div class="landing-inner" style="position:relative;z-index:1;">
+    <div class="landing-logo">SIT <span>FOREST</span></div>
+    <div class="landing-tagline" style="color:#74C69D;">SE들이 함께 자라는 숲</div>
+    <div class="landing-sub" style="color:#40916C;">
+      <span class="landing-sub-dot"></span>시디즈 Sitting Expert 전용 플랫폼
+    </div>
     <div class="landing-cards">
-      <div class="landing-card admin-card" onclick="goAdmin()">
-        <div class="lc-icon">🛠</div>
+      <div class="landing-card admin-card" onclick="goAdmin()" style="background:rgba(27,67,50,0.5);border-color:rgba(82,183,136,0.25);">
+        <div class="lc-icon">🌿</div>
         <div class="lc-title">관리자 입장</div>
         <div class="lc-desc">시험·설문을 만들고<br>결과를 분석합니다</div>
         <div class="lc-arrow">→</div>
       </div>
-      <div class="landing-card exam-card" onclick="goExaminee()">
-        <div class="lc-icon">📝</div>
-        <div class="lc-title">시험 · 설문 화면 확인</div>
-        <div class="lc-desc">응시자 입장에서는<br>어떻게 보이는지 확인해보세요</div>
+      <div class="landing-card exam-card" onclick="goExaminee()" style="background:rgba(13,31,13,0.5);border-color:rgba(82,183,136,0.15);">
+        <div class="lc-icon">🪑</div>
+        <div class="lc-title">시험 · 설문 확인</div>
+        <div class="lc-desc">응시자 입장에서<br>어떻게 보이는지 확인</div>
         <div class="lc-arrow">→</div>
       </div>
     </div>
   </div>
-  <div class="landing-footer">
-    TESTIFY © 2025 Sidiz — 사내 전용
+  <div class="landing-footer" style="color:#2D6A4F;">
+    SIT FOREST © 2026 Sidiz — 사내 전용
     <span style="margin:0 8px;opacity:.4;">·</span>
-    <span style="font-size:10px;">마지막 배포 <span id="landing-deploy-time">로딩 중...</span></span>
+    <span style="font-size:12px;">마지막 배포 <span id="landing-deploy-time">로딩 중...</span></span>
   </div>
 </div>
 
@@ -1022,7 +1064,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 ══════════════════════════════════════ -->
 <div id="view-admin" class="view">
   <nav class="sidebar">
-    <div class="sb-logo">TEST<span>IFY</span> <span class="sb-badge">관리자</span></div>
+    <div class="sb-logo" style="font-family:'Raleway',sans-serif;letter-spacing:3px;font-size:18px;">SIT <span>FOREST</span> <span class="sb-badge">관리자</span></div>
     <button class="sb-main-btn" onclick="goLanding()"><span class="sb-main-btn-icon">←</span> 메인화면으로 돌아가기</button>
     <div class="nav-section">메인</div>
     <div class="nav-item active" data-panel="dashboard"><span class="nav-icon">◈</span>대시보드</div>
@@ -1055,7 +1097,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
   <main class="main">
   <!-- 모바일 전용 상단바 -->
   <div class="mobile-top-bar" style="display:none;">
-    <div style="font-family:'DM Serif Display',serif;font-size:17px;">TEST<span style="color:var(--accent)">IFY</span></div>
+    <div style="font-family:'Raleway',sans-serif;font-size:15px;font-weight:800;letter-spacing:3px;">SIT <span style="color:var(--accent)">FOREST</span></div>
     <button onclick="goLanding()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:var(--rs);font-size:12px;font-weight:600;cursor:pointer;font-family:Pretendard,sans-serif;">← 메인</button>
   </div>
 
@@ -1327,16 +1369,20 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
             <input class="fi" id="result-search" placeholder="이름 또는 매장 검색..." style="max-width:280px;" oninput="filterResultTable(this.value)"/>
             <button class="btn btn-xs btn-outline" onclick="document.getElementById('result-search').value='';filterResultTable('')">초기화</button>
           </div>
-          <div class="rtable-wrap">
-            <table class="rtable">
+          <div class="rtable-wrap" style="overflow-x:auto;">
+            <table class="rtable nowrap">
               <thead>
   <tr>
     <th style="width:32px;"><input type="checkbox" id="result-check-all" onclick="toggleAllResultCheck(this)"/></th>
-    <th>이름</th><th>매장</th><th>시작</th><th>제출</th><th>소요</th>
-    <th>점수</th>
-    <th>채점 점수<br><span style="font-size:10px;color:var(--dim);font-weight:400;">관리자 입력</span></th>
+    <th onclick="sortResultTable('name')" style="cursor:pointer;user-select:none;">이름 <span id="rs-name" style="color:var(--dim);font-size:10px;">↕</span></th>
+    <th>매장</th>
+    <th onclick="sortResultTable('startTime')" style="cursor:pointer;user-select:none;">시작 <span id="rs-startTime" style="color:var(--dim);font-size:10px;">↕</span></th>
+    <th onclick="sortResultTable('time')" style="cursor:pointer;user-select:none;">제출 <span id="rs-time" style="color:var(--dim);font-size:10px;">↕</span></th>
+    <th onclick="sortResultTable('duration')" style="cursor:pointer;user-select:none;">소요 <span id="rs-duration" style="color:var(--dim);font-size:10px;">↕</span></th>
+    <th onclick="sortResultTable('score')" style="cursor:pointer;user-select:none;">점수 <span id="rs-score" style="color:var(--dim);font-size:10px;">↕</span></th>
+    <th onclick="sortResultTable('manual_score')" style="cursor:pointer;user-select:none;">채점 점수<br><span style="font-size:10px;color:var(--dim);font-weight:400;">관리자 입력</span> <span id="rs-manual_score" style="color:var(--dim);font-size:10px;">↕</span></th>
     <th>서술형</th>
-    <th>종합 점수<br><span style="font-size:10px;color:var(--dim);font-weight:400;">채점+서술형</span></th>
+    <th onclick="sortResultTable('total_score')" style="cursor:pointer;user-select:none;">종합 점수<br><span style="font-size:10px;color:var(--dim);font-weight:400;">채점+서술형</span> <span id="rs-total_score" style="color:var(--dim);font-size:10px;">↕</span></th>
     <th></th>
   </tr>
 </thead>
@@ -1423,7 +1469,7 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
         display:flex;align-items:center;justify-content:center;font-size:16px;
         transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.2);"
         onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">‹</button>
-      <div class="rtable-wrap" id="member-table-wrap" style="scroll-behavior:smooth;overflow-x:auto;">
+      <div class="rtable-wrap" id="member-table-wrap" style="scroll-behavior:smooth;overflow-x:auto;display:block;">
         <table class="rtable member-table" id="member-table">
           <thead id="member-thead"></thead>
           <tbody id="member-tbody"></tbody>
@@ -2113,8 +2159,10 @@ function confirmAdminPw() {
 let isPreviewMode = false;
 
 function goExaminee() {
+  const first = items.find(i => i.status === 'live') || items[0];
+  if (!first) { alert('먼저 시험이나 설문을 만들어주세요.'); return; }
   isPreviewMode = true;
-  loadIntro(items.find(i=>i.id==='i1'));
+  loadIntro(first);
   showView('intro');
   showPreviewBanner(true);
 }
@@ -3613,7 +3661,16 @@ async function showResultDetail(itemId) {
             })()
           : '<span style="color:var(--dim);font-size:12px;">—</span>';
 
-      return `<tr>
+      const totalNum = (manualScore !== '' && manualScore !== null) ? (parseInt(manualScore) + (r.essay_score||0)) : r.score;
+      return `<tr
+        data-name="${r.name}"
+        data-startTime="${r.startTime||''}"
+        data-time="${r.time||''}"
+        data-duration="${r.duration.includes('초과') ? 9999 : parseInt(r.duration)||0}"
+        data-score="${r.score||0}"
+        data-manual_score="${manualScore !== '' && manualScore !== null ? parseInt(manualScore) : ''}"
+        data-total_score="${totalNum||0}"
+      >
         <td><input type="checkbox" class="result-check" data-idx="${rIdx}"/></td>
         <td style="font-weight:600;">${r.name}</td>
         <td style="color:var(--muted);font-size:12px;">${r.store||'—'}</td>
@@ -3624,9 +3681,11 @@ async function showResultDetail(itemId) {
         <td>${manualScoreHTML}</td>
         <td>${essayHTML}</td>
         <td>${totalScoreHTML}</td>
-        <td style="display:flex;gap:6px;align-items:center;">
-          <button class="btn btn-xs btn-outline" onclick="openResponseDetail('${itemId}',${rIdx})">상세보기</button>
-          <button class="btn-del-record" onclick="deleteResponse('${itemId}',${rIdx})" title="기록 삭제">🗑</button>
+        <td>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button class="btn btn-xs btn-outline" onclick="openResponseDetail('${itemId}',${rIdx})">상세보기</button>
+            <button class="btn-del-record" onclick="deleteResponse('${itemId}',${rIdx})" title="기록 삭제">🗑</button>
+          </div>
         </td>
       </tr>`;
     }).join('');
@@ -4649,7 +4708,7 @@ function renderMemberTable() {
           : '<span style="color:var(--dim);">—</span>';
         return `<tr>
           ${visibleCols.map(([k]) => {
-            if (k==='_check') return `<td><input type="checkbox" class="member-check" data-id="${m.id}"/></td>`;
+            if (k==='_check') return `<td><input type="checkbox" class="member-check" data-id="${m.id}" onchange="updateMemberSelectedCount()"/></td>`;
             if (k==='tenure') return `<td>${tenureText}</td>`;
             if (k==='retro_count') return `<td style="cursor:pointer;" onclick="openRetroModal('${m.id}')" title="회고 현황 보기/편집">${retroText}</td>`;
             if (k==='seat1_score') {
@@ -4701,6 +4760,13 @@ function sortMembers(key) {
 
 function toggleAllMemberCheck(el) {
   document.querySelectorAll('.member-check').forEach(c => c.checked = el.checked);
+  updateMemberSelectedCount();
+}
+
+function updateMemberSelectedCount() {
+  const cnt = document.querySelectorAll('.member-check:checked').length;
+  const el = document.getElementById('member-selected-count');
+  if (el) el.textContent = cnt > 0 ? `선택 ${cnt}명` : '';
 }
 
 function clearMemberFilters() {
@@ -5387,6 +5453,7 @@ function generateAnswerKeyPDF() {
 
 
 
+
 function filterResultTable(val) {
   const q = val.toLowerCase();
   document.querySelectorAll('#result-detail-tbody tr').forEach(row => {
@@ -5397,6 +5464,48 @@ function filterResultTable(val) {
 }
 
 // ── 답안지 PDF ──
+
+// ── 결과 테이블 정렬 ──
+let _resultSortKey = null;
+let _resultSortAsc = true;
+
+function sortResultTable(key) {
+  if (_resultSortKey === key) _resultSortAsc = !_resultSortAsc;
+  else { _resultSortKey = key; _resultSortAsc = true; }
+
+  // 화살표 업데이트
+  document.querySelectorAll('[id^="rs-"]').forEach(el => el.textContent = '↕');
+  const arrow = document.getElementById('rs-' + key);
+  if (arrow) arrow.textContent = _resultSortAsc ? '↑' : '↓';
+
+  const tbody = document.getElementById('result-detail-tbody');
+  const rows = [...tbody.querySelectorAll('tr')];
+
+  rows.sort((a, b) => {
+    const getVal = (row) => {
+      const cells = row.querySelectorAll('td');
+      // 컬럼 인덱스: 0=체크, 1=이름, 2=매장, 3=시작, 4=제출, 5=소요, 6=점수, 7=채점점수, 8=서술형, 9=종합점수
+      const map = { name:1, startTime:3, time:4, duration:5, score:6, manual_score:7, total_score:9 };
+      const idx = map[key];
+      if (idx === undefined) return '';
+      const cell = cells[idx];
+      if (!cell) return '';
+      const input = cell.querySelector('input[type=number]');
+      if (input) return parseFloat(input.value) || -1;
+      const text = cell.textContent.trim().replace('점','').replace('분','').replace('⏱ 시간초과','9999');
+      return isNaN(text) ? text : parseFloat(text);
+    };
+    const av = getVal(a), bv = getVal(b);
+    if (typeof av === 'number' && typeof bv === 'number')
+      return _resultSortAsc ? av - bv : bv - av;
+    return _resultSortAsc
+      ? String(av).localeCompare(String(bv))
+      : String(bv).localeCompare(String(av));
+  });
+
+  rows.forEach(row => tbody.appendChild(row));
+}
+
 function toggleAllResultCheck(el) {
   document.querySelectorAll('.result-check').forEach(c => c.checked = el.checked);
 }
