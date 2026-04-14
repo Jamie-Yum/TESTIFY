@@ -342,12 +342,14 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .share-url{font-size:12px;color:var(--accent2);font-family:monospace;background:var(--surface2);padding:9px 13px;border-radius:var(--rs);margin:10px 0;word-break:break-all;}
 
 /* ══ RESULTS TABLE ══ */
-.rtable-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);}
+.rtable-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);display:block;width:100%;}
 .rtable{width:100%;border-collapse:collapse;}
-.rtable.member-table{white-space:nowrap;table-layout:auto;}
+.rtable.member-table{white-space:nowrap;table-layout:auto;width:auto;min-width:100%;}
 .rtable.member-table td,.rtable.member-table th{white-space:nowrap;}
-.rtable.member-table th:last-child,.rtable.member-table td:last-child{position:sticky;right:0;background:var(--surface);z-index:2;}
+.rtable.member-table th:last-child,.rtable.member-table td:last-child{position:sticky;right:0;background:var(--surface);z-index:2;box-shadow:-2px 0 4px rgba(0,0,0,.1);}
 .rtable.member-table thead th:last-child{background:var(--surface2);}
+.rtable.nowrap td,.rtable.nowrap th{white-space:nowrap;}
+.rtable.nowrap{width:auto;min-width:100%;}
 .rtable th{background:var(--surface2);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);border-bottom:1px solid var(--border);}
 .rtable td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13.5px;}
 .rtable tr:last-child td{border-bottom:none;}
@@ -1327,16 +1329,20 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
             <input class="fi" id="result-search" placeholder="이름 또는 매장 검색..." style="max-width:280px;" oninput="filterResultTable(this.value)"/>
             <button class="btn btn-xs btn-outline" onclick="document.getElementById('result-search').value='';filterResultTable('')">초기화</button>
           </div>
-          <div class="rtable-wrap">
-            <table class="rtable">
+          <div class="rtable-wrap" style="overflow-x:auto;">
+            <table class="rtable nowrap">
               <thead>
   <tr>
     <th style="width:32px;"><input type="checkbox" id="result-check-all" onclick="toggleAllResultCheck(this)"/></th>
-    <th>이름</th><th>매장</th><th>시작</th><th>제출</th><th>소요</th>
-    <th>점수</th>
-    <th>채점 점수<br><span style="font-size:10px;color:var(--dim);font-weight:400;">관리자 입력</span></th>
+    <th onclick="sortResultTable('name')" style="cursor:pointer;user-select:none;">이름 <span id="rs-name" style="color:var(--dim);font-size:10px;">↕</span></th>
+    <th>매장</th>
+    <th onclick="sortResultTable('startTime')" style="cursor:pointer;user-select:none;">시작 <span id="rs-startTime" style="color:var(--dim);font-size:10px;">↕</span></th>
+    <th onclick="sortResultTable('time')" style="cursor:pointer;user-select:none;">제출 <span id="rs-time" style="color:var(--dim);font-size:10px;">↕</span></th>
+    <th onclick="sortResultTable('duration')" style="cursor:pointer;user-select:none;">소요 <span id="rs-duration" style="color:var(--dim);font-size:10px;">↕</span></th>
+    <th onclick="sortResultTable('score')" style="cursor:pointer;user-select:none;">점수 <span id="rs-score" style="color:var(--dim);font-size:10px;">↕</span></th>
+    <th onclick="sortResultTable('manual_score')" style="cursor:pointer;user-select:none;">채점 점수<br><span style="font-size:10px;color:var(--dim);font-weight:400;">관리자 입력</span> <span id="rs-manual_score" style="color:var(--dim);font-size:10px;">↕</span></th>
     <th>서술형</th>
-    <th>종합 점수<br><span style="font-size:10px;color:var(--dim);font-weight:400;">채점+서술형</span></th>
+    <th onclick="sortResultTable('total_score')" style="cursor:pointer;user-select:none;">종합 점수<br><span style="font-size:10px;color:var(--dim);font-weight:400;">채점+서술형</span> <span id="rs-total_score" style="color:var(--dim);font-size:10px;">↕</span></th>
     <th></th>
   </tr>
 </thead>
@@ -1423,7 +1429,7 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
         display:flex;align-items:center;justify-content:center;font-size:16px;
         transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,.2);"
         onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">‹</button>
-      <div class="rtable-wrap" id="member-table-wrap" style="scroll-behavior:smooth;overflow-x:auto;">
+      <div class="rtable-wrap" id="member-table-wrap" style="scroll-behavior:smooth;overflow-x:auto;display:block;">
         <table class="rtable member-table" id="member-table">
           <thead id="member-thead"></thead>
           <tbody id="member-tbody"></tbody>
@@ -3613,7 +3619,16 @@ async function showResultDetail(itemId) {
             })()
           : '<span style="color:var(--dim);font-size:12px;">—</span>';
 
-      return `<tr>
+      const totalNum = (manualScore !== '' && manualScore !== null) ? (parseInt(manualScore) + (r.essay_score||0)) : r.score;
+      return `<tr
+        data-name="${r.name}"
+        data-startTime="${r.startTime||''}"
+        data-time="${r.time||''}"
+        data-duration="${r.duration.includes('초과') ? 9999 : parseInt(r.duration)||0}"
+        data-score="${r.score||0}"
+        data-manual_score="${manualScore !== '' && manualScore !== null ? parseInt(manualScore) : ''}"
+        data-total_score="${totalNum||0}"
+      >
         <td><input type="checkbox" class="result-check" data-idx="${rIdx}"/></td>
         <td style="font-weight:600;">${r.name}</td>
         <td style="color:var(--muted);font-size:12px;">${r.store||'—'}</td>
@@ -3624,9 +3639,11 @@ async function showResultDetail(itemId) {
         <td>${manualScoreHTML}</td>
         <td>${essayHTML}</td>
         <td>${totalScoreHTML}</td>
-        <td style="display:flex;gap:6px;align-items:center;">
-          <button class="btn btn-xs btn-outline" onclick="openResponseDetail('${itemId}',${rIdx})">상세보기</button>
-          <button class="btn-del-record" onclick="deleteResponse('${itemId}',${rIdx})" title="기록 삭제">🗑</button>
+        <td>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button class="btn btn-xs btn-outline" onclick="openResponseDetail('${itemId}',${rIdx})">상세보기</button>
+            <button class="btn-del-record" onclick="deleteResponse('${itemId}',${rIdx})" title="기록 삭제">🗑</button>
+          </div>
         </td>
       </tr>`;
     }).join('');
@@ -5387,6 +5404,36 @@ function generateAnswerKeyPDF() {
 
 
 
+
+// ── 결과 테이블 정렬 ──
+let _resultSortKey = null;
+let _resultSortAsc = true;
+
+function sortResultTable(key) {
+  if (_resultSortKey === key) _resultSortAsc = !_resultSortAsc;
+  else { _resultSortKey = key; _resultSortAsc = false; }
+
+  // 화살표 업데이트
+  ['name','startTime','time','duration','score','manual_score','total_score'].forEach(k => {
+    const el = document.getElementById('rs-' + k);
+    if (el) el.textContent = k === key ? (_resultSortAsc ? '↑' : '↓') : '↕';
+  });
+
+  const tbody = document.getElementById('result-detail-tbody');
+  if (!tbody) return;
+  const rows = [...tbody.querySelectorAll('tr')];
+
+  rows.sort((a, b) => {
+    let av = a.dataset[key] || '';
+    let bv = b.dataset[key] || '';
+    const an = parseFloat(av), bn = parseFloat(bv);
+    if (!isNaN(an) && !isNaN(bn)) return _resultSortAsc ? an - bn : bn - an;
+    return _resultSortAsc ? av.localeCompare(bv, 'ko') : bv.localeCompare(av, 'ko');
+  });
+
+  rows.forEach(r => tbody.appendChild(r));
+}
+
 function filterResultTable(val) {
   const q = val.toLowerCase();
   document.querySelectorAll('#result-detail-tbody tr').forEach(row => {
@@ -5397,6 +5444,48 @@ function filterResultTable(val) {
 }
 
 // ── 답안지 PDF ──
+
+// ── 결과 테이블 정렬 ──
+let _resultSortKey = null;
+let _resultSortAsc = true;
+
+function sortResultTable(key) {
+  if (_resultSortKey === key) _resultSortAsc = !_resultSortAsc;
+  else { _resultSortKey = key; _resultSortAsc = true; }
+
+  // 화살표 업데이트
+  document.querySelectorAll('[id^="rs-"]').forEach(el => el.textContent = '↕');
+  const arrow = document.getElementById('rs-' + key);
+  if (arrow) arrow.textContent = _resultSortAsc ? '↑' : '↓';
+
+  const tbody = document.getElementById('result-detail-tbody');
+  const rows = [...tbody.querySelectorAll('tr')];
+
+  rows.sort((a, b) => {
+    const getVal = (row) => {
+      const cells = row.querySelectorAll('td');
+      // 컬럼 인덱스: 0=체크, 1=이름, 2=매장, 3=시작, 4=제출, 5=소요, 6=점수, 7=채점점수, 8=서술형, 9=종합점수
+      const map = { name:1, startTime:3, time:4, duration:5, score:6, manual_score:7, total_score:9 };
+      const idx = map[key];
+      if (idx === undefined) return '';
+      const cell = cells[idx];
+      if (!cell) return '';
+      const input = cell.querySelector('input[type=number]');
+      if (input) return parseFloat(input.value) || -1;
+      const text = cell.textContent.trim().replace('점','').replace('분','').replace('⏱ 시간초과','9999');
+      return isNaN(text) ? text : parseFloat(text);
+    };
+    const av = getVal(a), bv = getVal(b);
+    if (typeof av === 'number' && typeof bv === 'number')
+      return _resultSortAsc ? av - bv : bv - av;
+    return _resultSortAsc
+      ? String(av).localeCompare(String(bv))
+      : String(bv).localeCompare(String(av));
+  });
+
+  rows.forEach(row => tbody.appendChild(row));
+}
+
 function toggleAllResultCheck(el) {
   document.querySelectorAll('.result-check').forEach(c => c.checked = el.checked);
 }
