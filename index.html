@@ -1353,9 +1353,14 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
         <!-- 점수 결과 탭 -->
         <div id="rtab-scores" class="rtab-content">
           <div class="stats-3 mb-16">
+            <div class="stat"><div class="stat-label">응시자 수</div><div class="stat-val" id="rd-count">—</div></div>
             <div class="stat"><div class="stat-label">평균 점수</div><div class="stat-val c-accent" id="rd-avg">—</div></div>
-            <div class="stat"><div class="stat-label">최고 점수</div><div class="stat-val c-blue"  id="rd-max">—</div></div>
-            <div class="stat"><div class="stat-label">최저 점수</div><div class="stat-val c-pink"  id="rd-min">—</div></div>
+            <div class="stat"><div class="stat-label">최고 / 최저</div><div class="stat-val c-blue" id="rd-maxmin">—</div></div>
+          </div>
+          <div class="stats-3 mb-16" id="rd-extra-stats">
+            <div class="stat"><div class="stat-label">채점 점수 평균</div><div class="stat-val c-accent" id="rd-manual-avg">—</div></div>
+            <div class="stat"><div class="stat-label">종합 점수 평균</div><div class="stat-val c-blue" id="rd-total-avg">—</div></div>
+            <div class="stat"><div class="stat-label">선택 인원</div><div class="stat-val" id="rd-selected">0명</div></div>
           </div>
           <!-- 설문 문항별 분석 (설문 모드일 때만 표시) -->
           <div id="survey-analysis-section" style="display:none;margin-bottom:24px;">
@@ -1407,7 +1412,13 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 document.querySelector('.main').insertAdjacentHTML('beforeend', `
   <div id="panel-members" class="panel">
     <div class="ph">
-      <div><div class="ph-title">SE 명단 관리</div><div class="ph-sub" id="member-count-sub">Sitting Expert 인원 정보</div></div>
+      <div>
+        <div class="ph-title">SE 명단 관리</div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:2px;">
+          <div class="ph-sub" id="member-count-sub">Sitting Expert 인원 정보</div>
+          <div style="font-size:12px;color:var(--accent2);font-weight:600;" id="member-selected-count"></div>
+        </div>
+      </div>
       <div class="flex gap-10" style="flex-wrap:wrap;">
         <button class="btn btn-outline btn-sm" onclick="openMemberColumnSettings()">⚙ 항목 관리</button>
         <button class="btn btn-outline btn-sm" onclick="openSessionManager()">📋 회고 세션 관리</button>
@@ -3600,17 +3611,32 @@ async function showResultDetail(itemId) {
   document.getElementById('result-detail-sub').textContent = `응시자 ${responses.length}명`;
   document.getElementById('result-detail-breadcrumb').textContent = `결과 분석 › ${item.title}`;
 
-  // 통계 (설문은 점수 없음)
+  // 통계
+  document.getElementById('rd-count').textContent = responses.length + '명';
+  document.getElementById('rd-selected').textContent = '0명';
+
   if (!isSurvey && responses.length) {
-    const scores = responses.map(r => r.score);
+    const scores = responses.map(r => r.score).filter(s => s != null);
     const avg = Math.round(scores.reduce((a,b)=>a+b,0) / scores.length);
     document.getElementById('rd-avg').textContent = avg + '점';
-    document.getElementById('rd-max').textContent = Math.max(...scores) + '점';
-    document.getElementById('rd-min').textContent = Math.min(...scores) + '점';
+    document.getElementById('rd-maxmin').textContent = Math.max(...scores) + ' / ' + Math.min(...scores) + '점';
+
+    const manuals = responses.map(r => r.manual_score).filter(s => s != null && s !== '');
+    document.getElementById('rd-manual-avg').textContent = manuals.length
+      ? Math.round(manuals.reduce((a,b)=>a+Number(b),0) / manuals.length) + '점' : '—';
+
+    const totals = responses.map(r => {
+      const m = r.manual_score;
+      return (m != null && m !== '') ? Number(m) + (r.essay_score||0) : r.score;
+    });
+    document.getElementById('rd-total-avg').textContent =
+      Math.round(totals.reduce((a,b)=>a+b,0) / totals.length) + '점';
+    document.getElementById('rd-extra-stats').style.display = '';
   } else {
     document.getElementById('rd-avg').textContent = '—';
-    document.getElementById('rd-max').textContent = '—';
-    document.getElementById('rd-min').textContent = '—';
+    document.getElementById('rd-maxmin').textContent = '—';
+    document.getElementById('rd-manual-avg').textContent = '—';
+    document.getElementById('rd-total-avg').textContent = '—';
   }
 
   // 응시자 테이블
@@ -3671,7 +3697,7 @@ async function showResultDetail(itemId) {
         data-manual_score="${manualScore !== '' && manualScore !== null ? parseInt(manualScore) : ''}"
         data-total_score="${totalNum||0}"
       >
-        <td><input type="checkbox" class="result-check" data-idx="${rIdx}"/></td>
+        <td><input type="checkbox" class="result-check" data-idx="${rIdx}" onchange="updateResultSelectedCount()"/></td>
         <td style="font-weight:600;">${r.name}</td>
         <td style="color:var(--muted);font-size:12px;">${r.store||'—'}</td>
         <td style="color:var(--muted);">${r.startTime||'—'}</td>
@@ -5508,6 +5534,13 @@ function sortResultTable(key) {
 
 function toggleAllResultCheck(el) {
   document.querySelectorAll('.result-check').forEach(c => c.checked = el.checked);
+  updateResultSelectedCount();
+}
+
+function updateResultSelectedCount() {
+  const cnt = document.querySelectorAll('.result-check:checked').length;
+  const el = document.getElementById('rd-selected');
+  if (el) el.textContent = cnt + '명';
 }
 
 function openResponsePdfModal() {
