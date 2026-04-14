@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TESTIFY — 시디즈 사내 시험 플랫폼</title>
+<title>SIT FOREST — 시디즈 사내 시험 플랫폼</title>
 <meta name="description" content="시디즈 사내 시험 & 설문 플랫폼 — 출제부터 결과 분석까지">
-<meta property="og:title" content="TESTIFY — 시디즈 사내 시험 플랫폼">
-<meta property="og:description" content="출제부터 결과 분석까지, 시디즈 전용 시험 플랫폼">
+<meta property="og:title" content="SIT FOREST — 시디즈 사내 시험 플랫폼">
+<meta property="og:description" content="SE들이 함께 자라는 숲, 시디즈 전용 시험·설문 플랫폼">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://jamie-yum.github.io/testify/og-image.png">
-<meta name="theme-color" content="#003EFF">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23003EFF'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23003EFF'/%3E%3Ctext x='90' y='130' font-family='Georgia,serif' font-size='110' font-weight='bold' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#1B4332">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27><rect width=%2764%27 height=%2764%27 rx=%2732%27 fill=%27%231B4332%27/><rect x=%274%27 y=%2734%27 width=%273%27 height=%2718%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%275%27 cy=%2730%27 r=%277%27 fill=%27%2340916C%27/><rect x=%2755%27 y=%2736%27 width=%273%27 height=%2716%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%2756%27 cy=%2732%27 r=%276%27 fill=%27%2352B788%27/><rect x=%2747%27 y=%2738%27 width=%273%27 height=%2714%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%2748%27 cy=%2734%27 r=%275%27 fill=%27%2340916C%27/><rect x=%2719%27 y=%2742%27 width=%2724%27 height=%274%27 rx=%272%27 fill=%27%2374C69D%27/><rect x=%2735%27 y=%2730%27 width=%273%27 height=%2714%27 rx=%271.5%27 fill=%27%2374C69D%27/><rect x=%2719%27 y=%2746%27 width=%273%27 height=%279%27 rx=%271.5%27 fill=%27%2352B788%27/><rect x=%2737%27 y=%2746%27 width=%273%27 height=%279%27 rx=%271.5%27 fill=%27%2352B788%27/><circle cx=%2728%27 cy=%2727%27 r=%275%27 fill=%27white%27/><rect x=%2722%27 y=%2732%27 width=%2712%27 height=%2710%27 rx=%273%27 fill=%27white%27/><rect x=%2722%27 y=%2742%27 width=%274%27 height=%278%27 rx=%272%27 fill=%27rgba(255,255,255,0.7)%27/><rect x=%2729%27 y=%2742%27 width=%274%27 height=%278%27 rx=%272%27 fill=%27rgba(255,255,255,0.7)%27/></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27><rect width=%2764%27 height=%2764%27 rx=%2732%27 fill=%27%231B4332%27/><rect x=%274%27 y=%2734%27 width=%273%27 height=%2718%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%275%27 cy=%2730%27 r=%277%27 fill=%27%2340916C%27/><rect x=%2755%27 y=%2736%27 width=%273%27 height=%2716%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%2756%27 cy=%2732%27 r=%276%27 fill=%27%2352B788%27/><rect x=%2747%27 y=%2738%27 width=%273%27 height=%2714%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%2748%27 cy=%2734%27 r=%275%27 fill=%27%2340916C%27/><rect x=%2719%27 y=%2742%27 width=%2724%27 height=%274%27 rx=%272%27 fill=%27%2374C69D%27/><rect x=%2735%27 y=%2730%27 width=%273%27 height=%2714%27 rx=%271.5%27 fill=%27%2374C69D%27/><rect x=%2719%27 y=%2746%27 width=%273%27 height=%279%27 rx=%271.5%27 fill=%27%2352B788%27/><rect x=%2737%27 y=%2746%27 width=%273%27 height=%279%27 rx=%271.5%27 fill=%27%2352B788%27/><circle cx=%2728%27 cy=%2727%27 r=%275%27 fill=%27white%27/><rect x=%2722%27 y=%2732%27 width=%2712%27 height=%2710%27 rx=%273%27 fill=%27white%27/><rect x=%2722%27 y=%2742%27 width=%274%27 height=%278%27 rx=%272%27 fill=%27rgba(255,255,255,0.7)%27/><rect x=%2729%27 y=%2742%27 width=%274%27 height=%278%27 rx=%272%27 fill=%27rgba(255,255,255,0.7)%27/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Raleway:wght@300;400;600;700;800&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -97,7 +97,7 @@ body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);
   animation:fadeUp .6s ease;
 }
 .landing-logo{
-  font-family:'DM Serif Display',serif;font-size:64px;letter-spacing:-3px;
+  font-family:'Raleway',sans-serif;font-size:60px;letter-spacing:8px;font-weight:800;
   color:var(--text);margin-bottom:10px;line-height:1;
 }
 .landing-logo span{color:var(--accent);}
@@ -143,7 +143,7 @@ body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--text);
 .main{flex:1;margin-left:228px;padding:32px 36px;min-height:100vh;}
 
 .sb-logo{
-  font-family:'DM Serif Display',serif;font-size:20px;padding:22px 20px;
+  font-family:'Raleway',sans-serif;font-size:18px;letter-spacing:4px;font-weight:800;padding:22px 20px;
   border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;
 }
 .sb-logo span{color:var(--accent);}
@@ -1013,7 +1013,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
     </div>
   </div>
   <div class="landing-footer">
-    TESTIFY © 2025 Sidiz — 사내 전용
+    SIT FOREST © 2026 Sidiz — 사내 전용
     <span style="margin:0 8px;opacity:.4;">·</span>
     <span style="font-size:10px;">마지막 배포 <span id="landing-deploy-time">로딩 중...</span></span>
   </div>
@@ -1024,7 +1024,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 ══════════════════════════════════════ -->
 <div id="view-admin" class="view">
   <nav class="sidebar">
-    <div class="sb-logo">TEST<span>IFY</span> <span class="sb-badge">관리자</span></div>
+    <div class="sb-logo" style="font-family:'Raleway',sans-serif;letter-spacing:3px;font-size:18px;">SIT <span>FOREST</span> <span class="sb-badge">관리자</span></div>
     <button class="sb-main-btn" onclick="goLanding()"><span class="sb-main-btn-icon">←</span> 메인화면으로 돌아가기</button>
     <div class="nav-section">메인</div>
     <div class="nav-item active" data-panel="dashboard"><span class="nav-icon">◈</span>대시보드</div>
@@ -1057,7 +1057,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
   <main class="main">
   <!-- 모바일 전용 상단바 -->
   <div class="mobile-top-bar" style="display:none;">
-    <div style="font-family:'DM Serif Display',serif;font-size:17px;">TEST<span style="color:var(--accent)">IFY</span></div>
+    <div style="font-family:'Raleway',sans-serif;font-size:15px;font-weight:800;letter-spacing:3px;">SIT <span style="color:var(--accent)">FOREST</span></div>
     <button onclick="goLanding()" style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:var(--rs);font-size:12px;font-weight:600;cursor:pointer;font-family:Pretendard,sans-serif;">← 메인</button>
   </div>
 
