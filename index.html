@@ -1294,6 +1294,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
             <button class="btn btn-danger btn-sm" id="btn-clear-all" onclick="clearAllResponses()">🗑 전체 삭제</button>
             <button class="btn btn-accent" onclick="downloadResultExcel()">📥 엑셀 다운로드</button>
             <button class="btn btn-outline btn-sm" onclick="openAnswerKeyEditor()" style="border-color:var(--accent);color:var(--accent);">📄 정답·해설 PDF</button>
+            <button class="btn btn-outline btn-sm" onclick="openResponsePdfModal()" style="border-color:var(--accent2);color:var(--accent2);">📋 답안지 PDF</button>
           </div>
         </div>
 
@@ -1322,6 +1323,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
             <table class="rtable">
               <thead>
   <tr>
+    <th style="width:32px;"><input type="checkbox" id="result-check-all" onclick="toggleAllResultCheck(this)"/></th>
     <th>이름</th><th>매장</th><th>시작</th><th>제출</th><th>소요</th>
     <th>점수</th>
     <th>채점 점수<br><span style="font-size:10px;color:var(--dim);font-weight:400;">관리자 입력</span></th>
@@ -1796,6 +1798,59 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
     <div class="modal-footer" style="margin-top:16px;">
       <button class="btn btn-outline" onclick="closeModalById('copy-modal')">취소</button>
       <button class="btn btn-accent" onclick="executeCopy()">📋 복사하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 답안지 PDF 모달 ══ -->
+<div class="modal-bg" id="response-pdf-modal">
+  <div class="modal" style="width:600px;max-height:85vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0;">
+      <div>
+        <div class="modal-title">답안지 PDF 설정</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">출력할 응시자와 문항을 선택하세요</div>
+      </div>
+      <button onclick="closeModalById('response-pdf-modal')" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex:1;overflow:hidden;">
+      <!-- 응시자 -->
+      <div style="display:flex;flex-direction:column;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">응시자 선택</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <button class="btn btn-xs btn-outline" onclick="document.querySelectorAll('.rpdf-resp-check').forEach(c=>c.checked=true)">전체 선택</button>
+          <button class="btn btn-xs btn-outline" onclick="document.querySelectorAll('.rpdf-resp-check').forEach(c=>c.checked=false)">전체 해제</button>
+        </div>
+        <div id="rpdf-resp-list" style="overflow-y:auto;display:flex;flex-direction:column;gap:4px;"></div>
+      </div>
+      <!-- 문항 -->
+      <div style="display:flex;flex-direction:column;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">문항 선택</div>
+        <div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;">
+          <button class="btn btn-xs btn-outline" onclick="rpdfSelectQuestions('all')">전체</button>
+          <button class="btn btn-xs btn-outline" onclick="rpdfSelectQuestions('wrong')">오답만</button>
+          <button class="btn btn-xs btn-outline" onclick="rpdfSelectQuestions('correct')">정답만</button>
+          <button class="btn btn-xs btn-outline" onclick="rpdfSelectQuestions('none')">개별 선택</button>
+        </div>
+        <div id="rpdf-q-list" style="overflow-y:auto;display:flex;flex-direction:column;gap:4px;"></div>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:10px 14px;background:var(--surface2);border-radius:var(--rs);flex-shrink:0;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">출력 방식</div>
+      <div style="display:flex;gap:8px;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;flex:1;padding:8px 12px;background:var(--surface);border:1px solid var(--accent);border-radius:var(--rs);">
+          <input type="radio" name="rpdf-layout" value="page" checked style="accent-color:var(--accent);"> 1인 1페이지
+          <span style="font-size:11px;color:var(--muted);margin-left:4px;">— 각자 별도 페이지</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;flex:1;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);">
+          <input type="radio" name="rpdf-layout" value="continuous" style="accent-color:var(--accent);"> 연속 나열
+          <span style="font-size:11px;color:var(--muted);margin-left:4px;">— 스크롤로 비교</span>
+        </label>
+      </div>
+    </div>
+    <div id="rpdf-summary" style="margin-top:8px;padding:8px 14px;background:var(--surface2);border-radius:var(--rs);font-size:12px;color:var(--muted);flex-shrink:0;"></div>
+    <div class="modal-footer" style="flex-shrink:0;margin-top:12px;">
+      <button class="btn btn-outline" onclick="closeModalById('response-pdf-modal')">취소</button>
+      <button class="btn btn-accent" onclick="generateResponsePDF()">📋 PDF 다운로드</button>
     </div>
   </div>
 </div>
@@ -3551,6 +3606,7 @@ async function showResultDetail(itemId) {
           : '<span style="color:var(--dim);font-size:12px;">—</span>';
 
       return `<tr>
+        <td><input type="checkbox" class="result-check" data-idx="${rIdx}"/></td>
         <td style="font-weight:600;">${r.name}</td>
         <td style="color:var(--muted);font-size:12px;">${r.store||'—'}</td>
         <td style="color:var(--muted);">${r.startTime||'—'}</td>
@@ -5318,6 +5374,228 @@ function generateAnswerKeyPDF() {
   setTimeout(() => win.print(), 500);
 }
 
+
+
+// ── 답안지 PDF ──
+function toggleAllResultCheck(el) {
+  document.querySelectorAll('.result-check').forEach(c => c.checked = el.checked);
+}
+
+function openResponsePdfModal() {
+  if (!currentDetailItemId) return;
+  const item = items.find(i => i.id === currentDetailItemId);
+  const responses = window._cachedResponses?.[currentDetailItemId] || [];
+  if (!responses.length) { alert('응시 기록이 없습니다.'); return; }
+
+  const isSurvey = item.mode === 'survey';
+  const typeLabel = { multiple:'객관식', ox:'O/X', short:'단답형', essay:'서술형', scale:'척도',
+    checkbox:'체크박스', dropdown:'드롭다운', linear:'선형 배율', star:'등급' };
+
+  // 체크된 응시자 미리 선택
+  const checkedIdxs = [...document.querySelectorAll('.result-check:checked')].map(c => parseInt(c.dataset.idx));
+
+  // 응시자 목록
+  const respList = document.getElementById('rpdf-resp-list');
+  respList.innerHTML = responses.map((r, i) => `
+    <label style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);cursor:pointer;font-size:13px;">
+      <input type="checkbox" class="rpdf-resp-check" value="${i}" ${checkedIdxs.length===0||checkedIdxs.includes(i)?'checked':''} style="width:14px;height:14px;accent-color:var(--accent);" onchange="updateRpdfSummary()">
+      <span style="font-weight:600;">${r.name}</span>
+      ${r.store ? `<span style="font-size:11px;color:var(--muted);">${r.store}</span>` : ''}
+      ${!isSurvey ? `<span style="margin-left:auto;font-size:12px;font-weight:700;color:var(--accent);">${r.score}점</span>` : ''}
+    </label>`).join('');
+
+  // 문항 목록
+  const qList = document.getElementById('rpdf-q-list');
+  qList.innerHTML = item.questions.map((q, i) => `
+    <label style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);cursor:pointer;font-size:12px;">
+      <input type="checkbox" class="rpdf-q-check" value="${i}" checked style="width:13px;height:13px;accent-color:var(--accent);" onchange="updateRpdfSummary()">
+      <span style="color:var(--muted);">Q${i+1}</span>
+      <span style="flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${q.text.slice(0,25)}${q.text.length>25?'…':''}</span>
+      <span style="font-size:10px;color:var(--dim);flex-shrink:0;">${typeLabel[q.type]||q.type}</span>
+    </label>`).join('');
+
+  updateRpdfSummary();
+  document.getElementById('response-pdf-modal').classList.add('open');
+}
+
+function rpdfSelectQuestions(mode) {
+  document.querySelectorAll('.rpdf-q-check').forEach(c => {
+    if (mode === 'all') c.checked = true;
+    else if (mode === 'none') c.checked = false;
+    // wrong/correct는 generateResponsePDF에서 응시자별로 처리
+    else c.checked = true;
+  });
+  // wrong/correct 모드 저장
+  document.getElementById('rpdf-q-list').dataset.mode = mode;
+  updateRpdfSummary();
+}
+
+function updateRpdfSummary() {
+  const respCount = [...document.querySelectorAll('.rpdf-resp-check:checked')].length;
+  const qCount = [...document.querySelectorAll('.rpdf-q-check:checked')].length;
+  const summary = document.getElementById('rpdf-summary');
+  if (summary) summary.innerHTML = `선택된 응시자 <b style="color:var(--text);">${respCount}명</b> · 문항 <b style="color:var(--text);">${qCount}개</b> · 총 <b style="color:var(--text);">${respCount}페이지</b> 출력 예정`;
+}
+
+function generateResponsePDF() {
+  if (!currentDetailItemId) return;
+  const item = items.find(i => i.id === currentDetailItemId);
+  const responses = window._cachedResponses?.[currentDetailItemId] || [];
+  const isSurvey = item.mode === 'survey';
+
+  const selectedResps = [...document.querySelectorAll('.rpdf-resp-check:checked')].map(c => responses[parseInt(c.value)]).filter(Boolean);
+  const selectedQIdxs = [...document.querySelectorAll('.rpdf-q-check:checked')].map(c => parseInt(c.value));
+  const qMode = document.getElementById('rpdf-q-list').dataset.mode || 'all';
+
+  if (!selectedResps.length) { alert('응시자를 선택해주세요.'); return; }
+
+  const typeLabel = { multiple:'객관식', ox:'O/X', short:'단답형', essay:'서술형', scale:'척도',
+    checkbox:'체크박스', dropdown:'드롭다운', linear:'선형 배율', star:'등급' };
+  const today = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
+
+  const css = `
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Noto Sans KR',sans-serif;background:#fff;color:#111;font-size:13px;line-height:1.7;}
+    .page{max-width:740px;margin:0 auto;padding:40px;}
+    .page-break{page-break-after:always;}
+    .page-continuous{border-bottom:3px solid #e8eeff;margin-bottom:40px;padding-bottom:40px;}
+    .page:last-child{page-break-after:auto;}
+    .header{border-bottom:2.5px solid #003EFF;padding-bottom:14px;margin-bottom:20px;}
+    .header-title{font-size:18px;font-weight:700;color:#003EFF;margin-bottom:2px;}
+    .header-meta{font-size:11px;color:#888;}
+    .header-info{display:flex;gap:20px;font-size:12px;color:#555;margin-top:10px;flex-wrap:wrap;}
+    .score-big{font-size:28px;font-weight:700;color:#003EFF;line-height:1;}
+    .q-block{padding:12px 14px;border-radius:8px;margin-bottom:10px;break-inside:avoid;}
+    .q-correct{border:0.5px solid #e8eeff;background:#f8faff;}
+    .q-wrong{border:0.5px solid #fde8ee;background:#fff8fa;}
+    .q-pending{border:0.5px solid #e0eeff;background:#f5f9ff;}
+    .q-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+    .ic{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0;}
+    .ic-ok{background:#003EFF;} .ic-ng{background:#D4537E;} .ic-pend{background:#94CDEB;}
+    .q-text{font-size:13px;font-weight:600;color:#111;margin-bottom:6px;line-height:1.5;}
+    .ans-row{display:flex;gap:6px;flex-wrap:wrap;}
+    .ans-mine{font-size:12px;padding:3px 10px;border-radius:20px;}
+    .ans-ok{border:1px solid #003EFF;background:rgba(0,62,255,.07);color:#003EFF;}
+    .ans-ng{border:1px solid #D4537E;background:rgba(212,83,126,.07);color:#D4537E;}
+    .ans-right{border:1px solid #003EFF;background:rgba(0,62,255,.05);color:#003EFF;}
+    .essay-box{font-size:12px;color:#444;background:#eef2ff;padding:8px 12px;border-radius:6px;border-left:3px solid #6B8BF6;line-height:1.7;}
+    .footer{margin-top:20px;padding-top:10px;border-top:0.5px solid #e0e8ff;display:flex;justify-content:space-between;font-size:10px;color:#aaa;}
+    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}.page{break-after:page;}}
+  `;
+
+  const layout = document.querySelector('input[name="rpdf-layout"]:checked')?.value || 'page';
+
+  const pages = selectedResps.map((r, pi) => {
+    const totalScore = item.questions.reduce((a, q) => a + (q.score||0), 0) || 100;
+    let correct = 0, wrong = 0, pending = 0;
+
+    // 문항 필터링 (wrong/correct 모드)
+    let qsToShow = selectedQIdxs.map(qi => ({ q: item.questions[qi], qi }));
+    if (qMode === 'wrong' || qMode === 'correct') {
+      qsToShow = qsToShow.filter(({ q, qi }) => {
+        if (q.type === 'essay' || isSurvey) return qMode !== 'wrong' && qMode !== 'correct';
+        const ua = String(r.answers?.[String(q.id)] ?? r.answers?.[q.id] ?? '');
+        const isOk = String(ua) === String(q.answer);
+        return qMode === 'wrong' ? !isOk : isOk;
+      });
+    }
+
+    // 정오답 통계
+    item.questions.forEach(q => {
+      if (q.type === 'essay' || isSurvey) { pending++; return; }
+      const ua = String(r.answers?.[String(q.id)] ?? r.answers?.[q.id] ?? '');
+      String(ua) === String(q.answer) ? correct++ : wrong++;
+    });
+
+    const qBlocks = qsToShow.map(({ q, qi }) => {
+      const ua = r.answers?.[String(q.id)] ?? r.answers?.[q.id];
+      let isCorrect = null, myText = '미응답', rightText = '';
+      let blockClass = 'q-pending', icClass = 'ic-pend', icIcon = '✎';
+      let ansHTML = '';
+
+      if (q.type === 'multiple' && q.options) {
+        const idx = parseInt(ua);
+        myText = (ua !== undefined && ua !== null && ua !== '') ? (q.options[idx] ? `${idx+1}번 — ${q.options[idx]}` : '미응답') : '미응답';
+        rightText = q.options[parseInt(q.answer)] ? `${parseInt(q.answer)+1}번 — ${q.options[parseInt(q.answer)]}` : '';
+        isCorrect = !isSurvey && ua !== undefined && ua !== null && ua !== '' ? String(ua) === String(q.answer) : null;
+      } else if (q.type === 'ox') {
+        myText = ua ?? '미응답';
+        rightText = q.answer;
+        isCorrect = !isSurvey ? ua === q.answer : null;
+      } else if (q.type === 'short') {
+        myText = ua ?? '미응답';
+        rightText = q.answer;
+        isCorrect = !isSurvey ? (String(ua||'').toLowerCase().replace(/\s/g,'') === String(q.answer||'').toLowerCase().replace(/\s/g,'')) : null;
+      } else if (q.type === 'essay') {
+        ansHTML = `<div class="essay-box">${ua || '(미작성)'}</div>`;
+      } else {
+        myText = Array.isArray(ua) ? ua.join(', ') : (ua ?? '미응답');
+      }
+
+      if (isCorrect === true) { blockClass='q-correct'; icClass='ic-ok'; icIcon='✓'; }
+      else if (isCorrect === false) { blockClass='q-wrong'; icClass='ic-ng'; icIcon='✕'; }
+
+      if (!ansHTML && q.type !== 'essay') {
+        const mineClass = isCorrect === true ? 'ans-ok' : isCorrect === false ? 'ans-ng' : 'ans-mine';
+        ansHTML = `<div class="ans-row">
+          <span class="ans-mine ${mineClass}">내 답: ${myText}</span>
+          ${isCorrect === false && rightText ? `<span class="ans-mine ans-right">정답: ${rightText}</span>` : ''}
+        </div>`;
+      }
+
+      const scoreText = !isSurvey && q.score && isCorrect !== null
+        ? `<span style="font-size:11px;font-weight:700;color:${isCorrect?'#003EFF':'#D4537E'};">${isCorrect?q.score:0}/${q.score}점</span>`
+        : (q.type==='essay' ? '<span style="font-size:10px;color:#888;">채점 대기</span>' : '');
+
+      return `<div class="q-block ${blockClass}">
+        <div class="q-header">
+          <div class="ic ${icClass}">${icIcon}</div>
+          <span style="font-size:11px;color:#888;">Q${qi+1} · ${typeLabel[q.type]||q.type}</span>
+          <span style="margin-left:auto;">${scoreText}</span>
+        </div>
+        <div class="q-text">${q.text.replace(/\n/g,'<br>')}</div>
+        ${ansHTML}
+      </div>`;
+    }).join('');
+
+    const pageClass = layout === 'page'
+      ? (pi < selectedResps.length - 1 ? 'page page-break' : 'page')
+      : (pi < selectedResps.length - 1 ? 'page page-continuous' : 'page');
+    return `<div class="${pageClass}">
+      <div class="header">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+          <div>
+            <div style="font-size:11px;color:#888;margin-bottom:4px;letter-spacing:.5px;">TESTIFY — 시디즈 사내 시험 플랫폼</div>
+            <div class="header-title">${item.title} — 답안지</div>
+            <div class="header-meta">${today}</div>
+          </div>
+          ${!isSurvey ? `<div style="text-align:right;"><div class="score-big">${r.score}점</div><div style="font-size:11px;color:#888;">/ ${totalScore}점</div></div>` : ''}
+        </div>
+        <div class="header-info">
+          <span>응시자 <b style="color:#111;">${r.name}</b></span>
+          ${r.store ? `<span>매장 <b style="color:#111;">${r.store}</b></span>` : ''}
+          <span>제출 <b style="color:#111;">${r.time}</b></span>
+          <span>소요 <b style="color:#111;">${r.duration}</b></span>
+          ${!isSurvey ? `<span style="color:#185FA5;">정답 ${correct}개 · 오답 ${wrong}개 · 채점대기 ${pending}개</span>` : ''}
+        </div>
+      </div>
+      ${qBlocks || '<div style="text-align:center;padding:40px;color:#888;">선택된 문항이 없습니다.</div>'}
+      <div class="footer">
+        <span>TESTIFY © 2026 Sidiz — 사내 전용</span>
+        <span>${pi+1} / ${selectedResps.length}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><style>${css}</style></head><body>${pages}</body></html>`;
+
+  closeModalById('response-pdf-modal');
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => win.print(), 600);
+}
 
 // ── 정답·해설 저장 & 링크 생성 ──
 async function saveAndShareAnswerKey() {
