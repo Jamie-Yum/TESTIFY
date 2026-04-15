@@ -4975,6 +4975,10 @@ function calcTenure(hireDate) {
 
 async function loadMembers() {
   if (!window.sb) return;
+  // 핵심 컬럼 show 상태 항상 true로 유지
+  ['name','store_type','store','tenure','retro_count','seat1_score'].forEach(k => {
+    if (memberColumns[k]) memberColumns[k].show = true;
+  });
   try {
     // 동적 컬럼 먼저 로드
     const { data: colData } = await sb.from('sidiz_member_columns').select('*').order('sort_order');
