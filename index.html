@@ -1413,6 +1413,20 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 <!-- ── SE 명단 관리 패널 (main 안에 삽입) ── -->
 <script>
 document.querySelector('.main').insertAdjacentHTML('beforeend', `
+  <div id="panel-resigned-members" class="panel">
+    <div class="ph">
+      <div>
+        <div class="ph-title">퇴사 SE</div>
+        <div class="ph-sub" id="resigned-count-sub">퇴사 처리된 SE 목록</div>
+      </div>
+    </div>
+    <div class="rtable-wrap" style="overflow-x:auto;">
+      <table class="rtable member-table" id="resigned-table">
+        <thead id="resigned-thead"></thead>
+        <tbody id="resigned-tbody"></tbody>
+      </table>
+    </div>
+  </div>
   <div id="panel-members" class="panel">
     <div class="ph">
       <div>
@@ -4902,26 +4916,6 @@ function showResult(score,ok,ng,pend,itemList,isSurvey) {
 }
 
 // ══════════════════════════════════════
-
-<!-- ── 퇴사 SE 패널 ── -->
-<script>
-document.querySelector('.main').insertAdjacentHTML('beforeend', `
-  <div id="panel-resigned-members" class="panel">
-    <div class="ph">
-      <div>
-        <div class="ph-title">퇴사 SE</div>
-        <div class="ph-sub" id="resigned-count-sub">퇴사 처리된 SE 목록</div>
-      </div>
-    </div>
-    <div class="rtable-wrap" style="overflow-x:auto;">
-      <table class="rtable member-table" id="resigned-table">
-        <thead id="resigned-thead"></thead>
-        <tbody id="resigned-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-`);
-</script>
 
 // SE 명단 관리
 // ══════════════════════════════════════
