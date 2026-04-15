@@ -1342,6 +1342,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
             <button class="btn btn-outline btn-sm" onclick="openResultSummaryPDF()" style="border-color:var(--accent4);color:var(--accent4);">📊 결과 요약 PDF</button>
             <button class="btn btn-outline btn-sm" onclick="openAnswerKeyEditor()" style="border-color:var(--accent);color:var(--accent);">📄 정답·해설 PDF</button>
             <button class="btn btn-outline btn-sm" onclick="openResponsePdfModal()" style="border-color:var(--accent2);color:var(--accent2);">📋 답안지 PDF</button>
+            <button class="btn btn-outline btn-sm" onclick="openStoreResultReport()" style="border-color:var(--accent);color:var(--accent);">🏪 매장별 리포트</button>
           </div>
         </div>
 
@@ -1425,6 +1426,7 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
         <button class="btn btn-outline btn-sm" onclick="openSessionManager()">📋 회고 세션 관리</button>
         <button class="btn btn-outline btn-sm" onclick="openCopyModal()">📋 선택 복사</button>
         <button class="btn btn-outline btn-sm" onclick="exportMembersExcel()">📥 엑셀 내보내기</button>
+        <button class="btn btn-outline btn-sm" onclick="openStoreMemberReport()" style="border-color:var(--accent);color:var(--accent);">🏪 매장별 리포트</button>
         <button class="btn btn-outline btn-sm" onclick="document.getElementById('member-excel-input').click()">📤 엑셀 업로드</button>
         <input type="file" id="member-excel-input" accept=".xlsx" style="display:none;" onchange="importMembersExcel(this.files[0])"/>
         <button class="btn btn-accent btn-sm" onclick="openAddMember()">＋ SE 추가</button>
@@ -3732,6 +3734,258 @@ async function showResultDetail(itemId) {
   document.getElementById('results-detail-view').classList.add('active');
 }
 
+
+
+// ── 시험 결과 → 매장별 리포트 ──
+async function openStoreResultReport() {
+  if (!currentDetailItemId) return;
+  const item = items.find(i => i.id === currentDetailItemId);
+  const responses = window._cachedResponses?.[currentDetailItemId] || await loadResponsesFromDB(currentDetailItemId);
+  if (!responses.length) { alert('응시 기록이 없습니다.'); return; }
+
+  const today = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
+  const isSurvey = item.mode === 'survey';
+
+  // 매장별 그룹핑
+  const storeMap = {};
+  responses.forEach(r => {
+    const store = r.store || '미입력';
+    if (!storeMap[store]) storeMap[store] = [];
+    storeMap[store].push(r);
+  });
+
+  const allScores = responses.map(r=>r.score).filter(s=>s!=null);
+  const totalAvg = allScores.length ? Math.round(allScores.reduce((a,b)=>a+b,0)/allScores.length) : 0;
+
+  const css = `
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Noto Sans KR',sans-serif;background:#fff;color:#111;padding:40px;font-size:13px;line-height:1.6;}
+    @media print{body{padding:20px;}.page-break{page-break-before:always;}}
+  `;
+
+  const storeBlocks = Object.entries(storeMap).map(([store, resps]) => {
+    const scores = resps.map(r=>r.score).filter(s=>s!=null);
+    const avg = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+    const max = scores.length ? Math.max(...scores) : 0;
+    const min = scores.length ? Math.min(...scores) : 0;
+
+    const rows = resps.map((r,i) => {
+      const m = r.manual_score;
+      const total = (m!=null&&m!=='') ? Number(m)+(r.essay_score||0) : r.score;
+      const bg = i%2===1 ? 'background:#f8faff;' : '';
+      const scoreColor = !isSurvey && r.score>=80 ? '#003EFF' : r.score>=60 ? '#BA7517' : '#D4537E';
+      return `<tr style="border-top:0.5px solid #dde5ff;${bg}">
+        <td style="padding:7px 10px;font-weight:600;">${r.name}</td>
+        <td style="padding:7px 10px;color:#888;font-size:12px;">${r.time||'—'}</td>
+        <td style="padding:7px 10px;color:#888;font-size:12px;">${r.duration||'—'}</td>
+        <td style="padding:7px 10px;text-align:right;"><span style="background:#e8eeff;color:${scoreColor};padding:2px 8px;border-radius:20px;font-weight:700;font-size:11px;">${isSurvey?'—':r.score+'점'}</span></td>
+        <td style="padding:7px 10px;text-align:right;color:#555;font-size:11px;">${m!=null&&m!==''?Number(m)+'점':'—'}</td>
+        <td style="padding:7px 10px;text-align:right;font-weight:700;color:#003EFF;font-size:11px;">${isSurvey?'—':total+'점'}</td>
+      </tr>`;
+    }).join('');
+
+    return `<div style="padding:12px 14px;border:0.5px solid #e8eeff;border-radius:8px;background:#f8faff;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#003EFF;"></div>
+          <span style="font-size:14px;font-weight:700;color:#003EFF;">${store}</span>
+          <span style="font-size:10px;color:#888;">${resps.length}명</span>
+        </div>
+        ${!isSurvey ? `<div style="display:flex;gap:20px;">
+          <div style="text-align:center;"><div style="font-size:9px;color:#888;">평균</div><div style="font-size:14px;font-weight:700;color:#003EFF;">${avg}점</div></div>
+          <div style="text-align:center;"><div style="font-size:9px;color:#888;">최고</div><div style="font-size:14px;font-weight:500;color:#185FA5;">${max}점</div></div>
+          <div style="text-align:center;"><div style="font-size:9px;color:#888;">최저</div><div style="font-size:14px;font-weight:500;color:#D4537E;">${min}점</div></div>
+        </div>` : ''}
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="background:#eef2ff;">
+          <th style="padding:6px 10px;text-align:left;font-size:10px;color:#666;font-weight:600;">이름</th>
+          <th style="padding:6px 10px;text-align:left;font-size:10px;color:#666;font-weight:600;">제출</th>
+          <th style="padding:6px 10px;text-align:left;font-size:10px;color:#666;font-weight:600;">소요</th>
+          <th style="padding:6px 10px;text-align:right;font-size:10px;color:#666;font-weight:600;">점수</th>
+          <th style="padding:6px 10px;text-align:right;font-size:10px;color:#666;font-weight:600;">채점</th>
+          <th style="padding:6px 10px;text-align:right;font-size:10px;color:#666;font-weight:600;">종합</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><style>${css}</style></head><body>
+    <div style="border-bottom:2.5px solid #003EFF;padding-bottom:14px;margin-bottom:20px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <div style="font-size:11px;color:#888;margin-bottom:3px;letter-spacing:.5px;">SIT FOREST — 시디즈 사내 시험 플랫폼</div>
+          <div style="font-size:18px;font-weight:700;color:#003EFF;margin-bottom:3px;">${item.title} — 매장별 결과</div>
+          <div style="font-size:12px;color:#888;">${today} · 전체 ${responses.length}명 · ${Object.keys(storeMap).length}개 매장</div>
+        </div>
+        ${!isSurvey ? `<div style="text-align:right;"><div style="font-size:11px;color:#888;">전체 평균</div><div style="font-size:26px;font-weight:700;color:#003EFF;line-height:1;">${totalAvg}점</div></div>` : ''}
+      </div>
+    </div>
+    ${storeBlocks}
+    <div style="margin-top:20px;padding-top:12px;border-top:0.5px solid #e0e8ff;display:flex;justify-content:space-between;font-size:10px;color:#aaa;">
+      <span>SIT FOREST © 2026 Sidiz — 사내 전용</span>
+      <span>${today}</span>
+    </div>
+  </body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => win.print(), 600);
+}
+
+// ── SE 명단 → 매장별 리포트 ──
+function openStoreMemberReport() {
+  if (!members.length) { alert('SE 명단이 없습니다.'); return; }
+
+  const today = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
+  const DP_STORES = ['논현','대구','대전','마곡','성수','센텀','송파','평택','합정'];
+
+  // 매장별 그룹핑
+  const storeMap = {};
+  members.forEach(m => {
+    const store = m.store || '미입력';
+    if (!storeMap[store]) storeMap[store] = [];
+    storeMap[store].push(m);
+  });
+
+  // 매장별 요약 계산
+  const storeSummary = Object.entries(storeMap).map(([store, list]) => {
+    const storeType = DP_STORES.includes(store) ? '더프 매장' : '입점몰';
+
+    // 근무기간 평균 (tenure 필드, 개월 수 or 텍스트)
+    const tenures = list.map(m => {
+      const t = m.tenure || '';
+      const match = t.match(/(\d+)년\s*(\d+)?개월?/);
+      if (match) return parseInt(match[1])*12 + (parseInt(match[2])||0);
+      const y = t.match(/(\d+)년/); if (y) return parseInt(y[1])*12;
+      const mo = t.match(/(\d+)개월/); if (mo) return parseInt(mo[1]);
+      return null;
+    }).filter(v=>v!=null);
+    const avgTenureMonths = tenures.length ? Math.round(tenures.reduce((a,b)=>a+b,0)/tenures.length) : null;
+    const avgTenureStr = avgTenureMonths!=null ? `${Math.floor(avgTenureMonths/12)}년 ${avgTenureMonths%12}개월` : '—';
+
+    // 회고 평균
+    const retros = list.map(m => {
+      const cnt = m.retro_count;
+      if (cnt!=null && cnt!=='') return Number(cnt);
+      // calcRetroCount 방식 대신 직접 count
+      return 0;
+    });
+    const avgRetro = retros.length ? (retros.reduce((a,b)=>a+b,0)/retros.length).toFixed(1) : '—';
+
+    // SEAT1 평균
+    const seat1s = list.map(m => seat1ScoreMap?.[m.name]).filter(v=>v!=null&&v!==undefined);
+    const avgSeat1 = seat1s.length ? Math.round(seat1s.reduce((a,b)=>a+b,0)/seat1s.length) : null;
+
+    return { store, storeType, list, avgTenureStr, avgRetro, avgSeat1, count: list.length };
+  });
+
+  // 요약 테이블
+  const summaryRows = storeSummary.map((s, i) => {
+    const bg = i%2===1 ? 'background:#f8faff;' : '';
+    const typeBadge = s.storeType==='더프 매장'
+      ? '<span style="font-size:9px;background:#e8f5e9;color:#0F6E56;padding:1px 8px;border-radius:20px;font-weight:600;">더프</span>'
+      : '<span style="font-size:9px;background:#e8f0fb;color:#0C447C;padding:1px 8px;border-radius:20px;font-weight:600;">입점몰</span>';
+    return `<tr style="border-top:0.5px solid #dde5ff;${bg}">
+      <td style="padding:8px 10px;font-weight:600;">${s.store}</td>
+      <td style="padding:8px 10px;">${typeBadge}</td>
+      <td style="padding:8px 10px;text-align:right;color:#555;">${s.count}명</td>
+      <td style="padding:8px 10px;text-align:right;color:#111;">${s.avgTenureStr}</td>
+      <td style="padding:8px 10px;text-align:right;color:#111;">${s.avgRetro}개</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:700;color:#003EFF;">${s.avgSeat1!=null?s.avgSeat1+'점':'—'}</td>
+    </tr>`;
+  }).join('');
+
+  // 인원 상세
+  const detailBlocks = storeSummary.map(s => {
+    const rows = s.list.map((m,i) => {
+      const bg = i%2===1 ? 'background:#f8faff;' : '';
+      const base = m.edu_base==='O' ? '<span style="color:#0F6E56;">✓ 이수</span>' : '<span style="color:#aaa;">— 미이수</span>';
+      const sit  = m.edu_situation==='O' ? '<span style="color:#0F6E56;">✓ 이수</span>' : '<span style="color:#aaa;">— 미이수</span>';
+      const retro = m.retro_count!=null&&m.retro_count!=='' ? m.retro_count+'개' : '—';
+      const seat1 = seat1ScoreMap?.[m.name]!=null ? seat1ScoreMap[m.name]+'점' : '—';
+      return `<tr style="border-top:0.5px solid #dde5ff;${bg}">
+        <td style="padding:6px 8px;font-weight:600;">${m.name}</td>
+        <td style="padding:6px 8px;color:#888;font-size:11px;">${m.tenure||'—'}</td>
+        <td style="padding:6px 8px;font-size:11px;">${base}</td>
+        <td style="padding:6px 8px;font-size:11px;">${sit}</td>
+        <td style="padding:6px 8px;text-align:right;color:#111;">${retro}</td>
+        <td style="padding:6px 8px;text-align:right;font-weight:700;color:#003EFF;">${seat1}</td>
+      </tr>`;
+    }).join('');
+
+    return `<div style="margin-bottom:14px;">
+      <div style="border-left:3px solid #003EFF;padding-left:10px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:13px;font-weight:700;color:#003EFF;">${s.store}</span>
+        <span style="font-size:10px;color:#888;">${s.count}명</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="background:#eef2ff;">
+          <th style="padding:6px 8px;text-align:left;font-size:10px;color:#666;font-weight:600;">이름</th>
+          <th style="padding:6px 8px;text-align:left;font-size:10px;color:#666;font-weight:600;">근무기간</th>
+          <th style="padding:6px 8px;text-align:left;font-size:10px;color:#666;font-weight:600;">BASE</th>
+          <th style="padding:6px 8px;text-align:left;font-size:10px;color:#666;font-weight:600;">SitUation</th>
+          <th style="padding:6px 8px;text-align:right;font-size:10px;color:#666;font-weight:600;">응대회고</th>
+          <th style="padding:6px 8px;text-align:right;font-size:10px;color:#666;font-weight:600;">SEAT1</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  const css = `
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Noto Sans KR',sans-serif;background:#fff;color:#111;padding:40px;font-size:13px;line-height:1.6;}
+    @media print{body{padding:20px;}}
+  `;
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><style>${css}</style></head><body>
+    <div style="border-bottom:2.5px solid #003EFF;padding-bottom:14px;margin-bottom:20px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <div style="font-size:11px;color:#888;margin-bottom:3px;letter-spacing:.5px;">SIT FOREST — 시디즈 사내 시험 플랫폼</div>
+          <div style="font-size:18px;font-weight:700;color:#003EFF;margin-bottom:3px;">SE 명단 — 매장별 현황</div>
+          <div style="font-size:12px;color:#888;">${today} · 전체 ${members.length}명 · ${Object.keys(storeMap).length}개 매장</div>
+        </div>
+        <div style="text-align:right;"><div style="font-size:11px;color:#888;">전체 인원</div><div style="font-size:26px;font-weight:700;color:#003EFF;line-height:1;">${members.length}명</div></div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">매장별 요약</div>
+      <table style="width:100%;border-collapse:collapse;border:0.5px solid #e8eeff;border-radius:6px;overflow:hidden;">
+        <thead><tr style="background:#003EFF;">
+          <th style="padding:9px 10px;text-align:left;font-size:10px;color:rgba(255,255,255,.8);font-weight:600;">매장</th>
+          <th style="padding:9px 10px;text-align:left;font-size:10px;color:rgba(255,255,255,.8);font-weight:600;">형태</th>
+          <th style="padding:9px 10px;text-align:right;font-size:10px;color:rgba(255,255,255,.8);font-weight:600;">인원</th>
+          <th style="padding:9px 10px;text-align:right;font-size:10px;color:rgba(255,255,255,.8);font-weight:600;">평균 근무</th>
+          <th style="padding:9px 10px;text-align:right;font-size:10px;color:rgba(255,255,255,.8);font-weight:600;">회고 평균</th>
+          <th style="padding:9px 10px;text-align:right;font-size:10px;color:rgba(255,255,255,.8);font-weight:600;">SEAT1 평균</th>
+        </tr></thead>
+        <tbody>${summaryRows}</tbody>
+      </table>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px;">인원 상세</div>
+      ${detailBlocks}
+    </div>
+
+    <div style="margin-top:20px;padding-top:12px;border-top:0.5px solid #e0e8ff;display:flex;justify-content:space-between;font-size:10px;color:#aaa;">
+      <span>SIT FOREST © 2026 Sidiz — 사내 전용</span>
+      <span>${today}</span>
+    </div>
+  </body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => win.print(), 600);
+}
 
 // ── 결과 요약 PDF ──
 async function openResultSummaryPDF() {
