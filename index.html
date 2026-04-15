@@ -1339,6 +1339,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
           <div style="display:flex;gap:8px;">
             <button class="btn btn-danger btn-sm" id="btn-clear-all" onclick="clearAllResponses()">🗑 전체 삭제</button>
             <button class="btn btn-accent" onclick="downloadResultExcel()">📥 엑셀 다운로드</button>
+            <button class="btn btn-outline btn-sm" onclick="openResultSummaryPDF()" style="border-color:var(--accent4);color:var(--accent4);">📊 결과 요약 PDF</button>
             <button class="btn btn-outline btn-sm" onclick="openAnswerKeyEditor()" style="border-color:var(--accent);color:var(--accent);">📄 정답·해설 PDF</button>
             <button class="btn btn-outline btn-sm" onclick="openResponsePdfModal()" style="border-color:var(--accent2);color:var(--accent2);">📋 답안지 PDF</button>
           </div>
@@ -3731,6 +3732,106 @@ async function showResultDetail(itemId) {
   document.getElementById('results-detail-view').classList.add('active');
 }
 
+
+// ── 결과 요약 PDF ──
+async function openResultSummaryPDF() {
+  if (!currentDetailItemId) return;
+  const item = items.find(i => i.id === currentDetailItemId);
+  const responses = window._cachedResponses?.[currentDetailItemId] || await loadResponsesFromDB(currentDetailItemId);
+  if (!responses.length) { alert('응시 기록이 없습니다.'); return; }
+
+  // 선택된 응시자 필터 (없으면 전체)
+  const checked = [...document.querySelectorAll('.result-check:checked')];
+  const targetResps = checked.length
+    ? checked.map(c => responses[parseInt(c.dataset.idx)]).filter(Boolean)
+    : responses;
+
+  const isSurvey = item.mode === 'survey';
+  const today = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
+  const scores = targetResps.map(r=>r.score).filter(s=>s!=null);
+  const avg = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+  const manuals = targetResps.map(r=>r.manual_score).filter(s=>s!=null&&s!=='');
+  const manualAvg = manuals.length ? Math.round(manuals.reduce((a,b)=>a+Number(b),0)/manuals.length) : null;
+  const totals = targetResps.map(r=>{
+    const m=r.manual_score; return (m!=null&&m!=='') ? Number(m)+(r.essay_score||0) : r.score;
+  });
+  const totalAvg = totals.length ? Math.round(totals.reduce((a,b)=>a+b,0)/totals.length) : 0;
+  const maxScore = scores.length ? Math.max(...scores) : 0;
+  const minScore = scores.length ? Math.min(...scores) : 0;
+
+  const rows = targetResps.map((r,i) => {
+    const m = r.manual_score;
+    const total = (m!=null&&m!=='') ? Number(m)+(r.essay_score||0) : r.score;
+    return `<tr style="border-bottom:0.5px solid #e8eeff;">
+      <td style="padding:7px 10px;font-weight:600;color:#111;">${r.name}</td>
+      <td style="padding:7px 10px;color:#666;font-size:12px;">${r.store||'—'}</td>
+      <td style="padding:7px 10px;color:#666;font-size:12px;">${r.time||'—'}</td>
+      <td style="padding:7px 10px;font-weight:700;color:${!isSurvey&&r.score>=80?'#003EFF':r.score>=60?'#BA7517':'#D4537E'};">${isSurvey?'—':r.score+'점'}</td>
+      <td style="padding:7px 10px;color:#555;">${m!=null&&m!==''?Number(m)+'점':'—'}</td>
+      <td style="padding:7px 10px;font-weight:700;color:#003EFF;">${isSurvey?'—':total+'점'}</td>
+    </tr>`;
+  }).join('');
+
+  const css = `
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Noto Sans KR',sans-serif;background:#fff;color:#111;padding:40px;font-size:13px;}
+    @media print{body{padding:20px;}}
+  `;
+
+  const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><style>${css}</style></head><body>
+    <div style="border-bottom:2.5px solid #003EFF;padding-bottom:14px;margin-bottom:24px;">
+      <div style="font-size:11px;color:#888;margin-bottom:4px;letter-spacing:.5px;">SIT FOREST — 시디즈 사내 시험 플랫폼</div>
+      <div style="font-size:20px;font-weight:700;color:#003EFF;margin-bottom:4px;">${item.title} — 결과 요약</div>
+      <div style="font-size:12px;color:#888;">${today} · 총 ${targetResps.length}명${checked.length ? ' (선택됨)' : ''}</div>
+    </div>
+
+    ${!isSurvey ? `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">
+      <div style="padding:14px;background:#f8faff;border:0.5px solid #e8eeff;border-radius:8px;">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;">평균 점수</div>
+        <div style="font-size:22px;font-weight:700;color:#003EFF;">${avg}점</div>
+      </div>
+      <div style="padding:14px;background:#f8faff;border:0.5px solid #e8eeff;border-radius:8px;">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;">최고 / 최저</div>
+        <div style="font-size:22px;font-weight:700;color:#185FA5;">${maxScore} / ${minScore}</div>
+      </div>
+      <div style="padding:14px;background:#f8faff;border:0.5px solid #e8eeff;border-radius:8px;">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;">채점 점수 평균</div>
+        <div style="font-size:22px;font-weight:700;color:#003EFF;">${manualAvg!=null?manualAvg+'점':'—'}</div>
+      </div>
+      <div style="padding:14px;background:#f8faff;border:0.5px solid #e8eeff;border-radius:8px;">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;">종합 점수 평균</div>
+        <div style="font-size:22px;font-weight:700;color:#003EFF;">${totalAvg}점</div>
+      </div>
+    </div>` : ''}
+
+    <table style="width:100%;border-collapse:collapse;border:0.5px solid #e8eeff;border-radius:8px;overflow:hidden;">
+      <thead>
+        <tr style="background:#f0f4ff;">
+          <th style="padding:9px 10px;text-align:left;font-size:11px;color:#666;font-weight:600;">이름</th>
+          <th style="padding:9px 10px;text-align:left;font-size:11px;color:#666;font-weight:600;">매장</th>
+          <th style="padding:9px 10px;text-align:left;font-size:11px;color:#666;font-weight:600;">제출</th>
+          <th style="padding:9px 10px;text-align:left;font-size:11px;color:#666;font-weight:600;">점수</th>
+          <th style="padding:9px 10px;text-align:left;font-size:11px;color:#666;font-weight:600;">채점</th>
+          <th style="padding:9px 10px;text-align:left;font-size:11px;color:#666;font-weight:600;">종합</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+
+    <div style="margin-top:20px;padding-top:12px;border-top:0.5px solid #e8eeff;display:flex;justify-content:space-between;font-size:10px;color:#aaa;">
+      <span>SIT FOREST © 2026 Sidiz — 사내 전용</span>
+      <span>${today}</span>
+    </div>
+  </body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => win.print(), 600);
+}
+
 async function downloadResultExcel() {
   if (!currentDetailItemId) return;
   const item = items.find(i => i.id === currentDetailItemId);
@@ -3738,14 +3839,39 @@ async function downloadResultExcel() {
   const responses = await loadResponsesFromDB(currentDetailItemId);
   if (!responses.length) { alert('다운로드할 응시 기록이 없습니다.'); return; }
   const isSurvey = item.mode === 'survey';
-  const header = ['이름', '시작시각', '제출시각', '소요시간', '점수', '탭이탈횟수'];
+
+  // 헤더
+  const header = ['이름', '매장', '시작시각', '제출시각', '소요시간'];
+  if (!isSurvey) header.push('점수', '채점 점수', '서술형 점수', '종합 점수');
+  header.push('탭이탈');
   item.questions.forEach((q, i) => header.push(`Q${i+1}. ${q.text.slice(0,20)}`));
+
   const rows = responses.map(r => {
-    const base = [r.name, r.startTime||'—', r.time, r.duration, isSurvey ? '—' : r.score, r.tabWarnings||0];
-    item.questions.forEach(q => base.push(r.answers?.[q.id] ?? '미응답'));
+    const manualScore = r.manual_score ?? '';
+    const essayScore = r.essay_score ?? '';
+    const totalScore = (manualScore !== '' && manualScore !== null)
+      ? Number(manualScore) + (Number(essayScore)||0)
+      : (isSurvey ? '' : r.score);
+
+    const base = [r.name, r.store||'', r.startTime||'—', r.time, r.duration];
+    if (!isSurvey) base.push(r.score, manualScore, essayScore, totalScore);
+    base.push(r.tabWarnings||0);
+    item.questions.forEach(q => {
+      const ans = r.answers?.[String(q.id)] ?? r.answers?.[q.id] ?? '미응답';
+      if (q.type === 'multiple' && q.options && ans !== '미응답') {
+        base.push(q.options[parseInt(ans)] ? `${parseInt(ans)+1}. ${q.options[parseInt(ans)]}` : ans);
+      } else {
+        base.push(Array.isArray(ans) ? ans.join(', ') : ans);
+      }
+    });
     return base;
   });
+
+  // 스타일 적용
   const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  const colWidths = header.map((h, i) => ({ wch: i < 5 ? 14 : i < 9 ? 10 : Math.max(h.length * 2, 20) }));
+  ws['!cols'] = colWidths;
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '결과');
   XLSX.writeFile(wb, `${item.title}_결과.xlsx`);
