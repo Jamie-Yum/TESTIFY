@@ -1084,6 +1084,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 
     <div class="nav-section">인원 관리</div>
     <div class="nav-item" data-panel="members"><span class="nav-icon">👥</span>SE 명단</div>
+    <div class="nav-item" data-panel="resigned-members"><span class="nav-icon">🚪</span>퇴사 SE</div>
 
     <div class="sb-footer">
       <div class="sb-back" onclick="goLanding()">← 메인으로</div>
@@ -2212,6 +2213,7 @@ function nav(panel, pushHistory = true) {
   document.querySelector(`.nav-item[data-panel="${panel}"]`)?.classList.add('active');
   if (['dashboard','exam-list','survey-list'].includes(panel)) renderAll();
   if (panel === 'results') { showResultsList(); renderResultsList(); }
+  if (panel === 'resigned-members') { loadResignedMembers(); }
   if (panel === 'editor' && !currentId) openNewModal('exam');
   if (panel === 'members') loadMembers();
 
@@ -4900,6 +4902,27 @@ function showResult(score,ok,ng,pend,itemList,isSurvey) {
 }
 
 // ══════════════════════════════════════
+
+<!-- ── 퇴사 SE 패널 ── -->
+<script>
+document.querySelector('.main').insertAdjacentHTML('beforeend', `
+  <div id="panel-resigned-members" class="panel">
+    <div class="ph">
+      <div>
+        <div class="ph-title">퇴사 SE</div>
+        <div class="ph-sub" id="resigned-count-sub">퇴사 처리된 SE 목록</div>
+      </div>
+    </div>
+    <div class="rtable-wrap" style="overflow-x:auto;">
+      <table class="rtable member-table" id="resigned-table">
+        <thead id="resigned-thead"></thead>
+        <tbody id="resigned-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+`);
+</script>
+
 // SE 명단 관리
 // ══════════════════════════════════════
 let members = [];
@@ -4994,7 +5017,7 @@ async function loadMembers() {
     // 세션 + 회고 데이터 병렬 로드
     await Promise.all([loadReflectionSessions(), loadAllReflections(), loadSeat1Scores()]);
 
-    const { data, error } = await sb.from('sidiz_members').select('*').order('created_at', { ascending: true });
+    const { data, error } = await sb.from('sidiz_members').select('*').eq('resigned', false).order('created_at', { ascending: true });
     if (error) { console.warn('명단 로드 오류:', error.message); return; }
     members = data || [];
     renderMemberTable();
@@ -5139,6 +5162,7 @@ function renderMemberTable() {
           <td>
             <div style="display:flex;gap:5px;align-items:center;">
               <button class="btn btn-xs btn-outline" onclick="openEditMember('${m.id}')">편집</button>
+              <button class="btn btn-xs btn-outline" onclick="resignMember('${m.id}')" title="퇴사 처리" style="color:var(--accent3);border-color:rgba(240,96,144,.3);">🚪</button>
               <button class="btn-del-record" onclick="deleteMember('${m.id}')" title="삭제">🗑</button>
             </div>
           </td>
@@ -5362,12 +5386,99 @@ async function saveMember() {
   } catch(e) { alert('저장 실패: ' + e.message); }
 }
 
+
+// ── 퇴사 처리 ──
+async function resignMember(id) {
+  const m = members.find(m => m.id === id);
+  if (!m) return;
+  if (!confirm(`이 SE를 퇴사 처리하시겠습니까?\n\n퇴사 SE 탭에서 복직 처리가 가능합니다.\n\n대상: ${m.name} (${m.store||'매장 미입력'})`)) return;
+  if (!window.sb) return;
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    await sb.from('sidiz_members').update({ resigned: true, resign_date: today }).eq('id', id);
+    await loadMembers();
+    await loadResignedMembers();
+    alert(`${m.name} SE가 퇴사 처리되었습니다.\n퇴사 SE 탭에서 확인하세요.`);
+  } catch(e) { alert('퇴사 처리 실패: ' + e.message); }
+}
+
+// ── 퇴사 SE 목록 로드 ──
+let resignedMembers = [];
+async function loadResignedMembers() {
+  if (!window.sb) return;
+  try {
+    const { data } = await sb.from('sidiz_members').select('*').eq('resigned', true).order('resign_date', { ascending: false });
+    resignedMembers = data || [];
+    renderResignedTable();
+  } catch(e) { console.warn('퇴사 SE 로드 실패:', e.message); }
+}
+
+// ── 퇴사 SE 테이블 렌더 ──
+function renderResignedTable() {
+  const thead = document.getElementById('resigned-thead');
+  const tbody = document.getElementById('resigned-tbody');
+  const sub = document.getElementById('resigned-count-sub');
+  if (!thead || !tbody) return;
+  if (sub) sub.textContent = `퇴사 처리된 SE ${resignedMembers.length}명`;
+
+  thead.innerHTML = `<tr>
+    <th>이름</th><th>매장</th><th>입사일</th><th>퇴사일</th><th>근무기간</th><th>메모</th><th>관리</th>
+  </tr>`;
+
+  if (!resignedMembers.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px;">퇴사 처리된 SE가 없습니다.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = resignedMembers.map(m => {
+    // 입사~퇴사 기간 계산
+    let tenureText = '—';
+    if (m.hire_date && m.resign_date) {
+      const hire = new Date(m.hire_date);
+      const resign = new Date(m.resign_date);
+      let y = resign.getFullYear() - hire.getFullYear();
+      let mo = resign.getMonth() - hire.getMonth();
+      if (mo < 0) { y--; mo += 12; }
+      tenureText = y > 0 ? `${y}년 ${mo}개월` : `${mo}개월`;
+    }
+    return `<tr>
+      <td style="font-weight:600;">${m.name}</td>
+      <td style="color:var(--muted);">${m.store||'—'}</td>
+      <td style="color:var(--muted);font-size:12px;">${m.hire_date||'—'}</td>
+      <td style="color:var(--accent3);font-size:12px;">${m.resign_date||'—'}</td>
+      <td style="color:var(--muted);font-size:12px;">${tenureText}</td>
+      <td style="color:var(--muted);font-size:12px;">${m.memo||'—'}</td>
+      <td>
+        <div style="display:flex;gap:5px;align-items:center;">
+          <button class="btn btn-xs btn-outline" onclick="reinstateMember('${m.id}')" style="color:var(--accent2);border-color:rgba(96,196,240,.3);">복직</button>
+          <button class="btn-del-record" onclick="deleteMember('${m.id}')" title="완전 삭제">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── 복직 처리 ──
+async function reinstateMember(id) {
+  const m = resignedMembers.find(m => m.id === id);
+  if (!m) return;
+  if (!confirm(`${m.name} SE를 복직 처리하시겠습니까?\nSE 명단으로 다시 이동됩니다.`)) return;
+  if (!window.sb) return;
+  try {
+    await sb.from('sidiz_members').update({ resigned: false, resign_date: null }).eq('id', id);
+    await loadMembers();
+    await loadResignedMembers();
+    alert(`${m.name} SE가 복직 처리되었습니다.`);
+  } catch(e) { alert('복직 처리 실패: ' + e.message); }
+}
+
 async function deleteMember(id) {
-  if (!confirm('이 SE를 삭제할까요?')) return;
+  if (!confirm('이 SE를 완전히 삭제할까요? 이 작업은 되돌릴 수 없습니다.')) return;
   if (!window.sb) return;
   try {
     await sb.from('sidiz_members').delete().eq('id', id);
     await loadMembers();
+    await loadResignedMembers();
   } catch(e) { alert('삭제 실패: ' + e.message); }
 }
 
