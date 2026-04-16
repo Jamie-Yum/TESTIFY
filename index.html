@@ -1084,7 +1084,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 
     <div class="nav-section">인원 관리</div>
     <div class="nav-item" data-panel="members"><span class="nav-icon">👥</span>SE 명단</div>
-    <div class="nav-item" data-panel="resigned-members"><span class="nav-icon">🚪</span>퇴사 SE</div>
+    <div class="nav-item" data-panel="resigned-members"><span class="nav-icon">🚪</span>지난 SE</div>
 
     <div class="sb-footer">
       <div class="sb-back" onclick="goLanding()">← 메인으로</div>
@@ -1416,10 +1416,15 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
   <div id="panel-resigned-members" class="panel">
     <div class="ph">
       <div>
-        <div class="ph-title">퇴사 SE</div>
+        <div class="ph-title">지난 SE</div>
         <div class="ph-sub" id="resigned-count-sub">퇴사 처리된 SE 목록</div>
       </div>
     </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+      <input class="fi" id="resigned-search" placeholder="이름·매장 검색..." style="max-width:240px;" oninput="renderResignedTable()"/>
+      <button class="btn btn-xs btn-outline" onclick="document.getElementById('resigned-search').value='';renderResignedTable()">초기화</button>
+    </div>
+    <div id="resigned-store-summary" style="margin-bottom:16px;"></div>
     <div class="rtable-wrap" style="overflow-x:auto;">
       <table class="rtable member-table" id="resigned-table">
         <thead id="resigned-thead"></thead>
@@ -1745,7 +1750,10 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
       </div>
       <div class="fg"><label class="fl">역할/직급</label><input class="fi" id="m-role" placeholder="예: SE, 매니저"/></div>
     </div>
-    <div class="fg"><label class="fl">입사년월일</label><input class="fi" type="date" id="m-hire-date"/></div>
+    <div class="two-col">
+      <div class="fg"><label class="fl">입사년월일</label><input class="fi" type="date" id="m-hire-date"/></div>
+      <div class="fg" id="m-resign-date-wrap" style="display:none;"><label class="fl" style="color:var(--accent3);">퇴사일</label><input class="fi" type="date" id="m-resign-date"/></div>
+    </div>
     <div class="fg"><label class="fl">메모</label><textarea class="fi" id="m-memo" rows="2" placeholder="기타 메모"></textarea></div>
     <div id="m-dynamic-fields"></div>
     <div class="modal-footer">
@@ -5325,6 +5333,8 @@ function openEditMember(id) {
   document.getElementById('m-role').value       = m.role || '';
   document.getElementById('m-hire-date').value  = m.hire_date || '';
   document.getElementById('m-memo').value       = m.memo || '';
+  // 퇴사일 필드 숨김 (일반 편집 시)
+  document.getElementById('m-resign-date-wrap').style.display = 'none';
   renderDynamicMemberFields(m);
   document.getElementById('member-modal').classList.add('open');
 }
@@ -5356,6 +5366,8 @@ function renderDynamicMemberFields(m) {
 async function saveMember() {
   const name = document.getElementById('m-name').value.trim();
   if (!name) { alert('이름을 입력해주세요.'); return; }
+  const resignDateWrap = document.getElementById('m-resign-date-wrap');
+  const resignDateVal = document.getElementById('m-resign-date').value || null;
   const data = {
     name,
     phone:       document.getElementById('m-phone').value.trim() || null,
@@ -5365,6 +5377,7 @@ async function saveMember() {
     role:        document.getElementById('m-role').value.trim() || null,
     hire_date:   document.getElementById('m-hire-date').value || null,
     memo:        document.getElementById('m-memo').value.trim() || null,
+    ...(resignDateWrap?.style.display !== 'none' ? { resign_date: resignDateVal } : {}),
   };
   // 동적 컬럼 데이터 추가
   dynamicColumns.forEach(col => {
@@ -5377,22 +5390,45 @@ async function saveMember() {
     else await sb.from('sidiz_members').insert(data);
     closeModalById('member-modal');
     await loadMembers();
+    await loadResignedMembers();
   } catch(e) { alert('저장 실패: ' + e.message); }
 }
 
+
+
+function openEditResignedMember(id) {
+  const m = resignedMembers.find(m => m.id === id);
+  if (!m) return;
+  editingMemberId = id;
+  document.getElementById('member-modal-title').textContent = '퇴사 SE 편집';
+  document.getElementById('m-name').value       = m.name || '';
+  document.getElementById('m-phone').value      = m.phone || '';
+  document.getElementById('m-email').value      = m.email || '';
+  document.getElementById('m-employment').value = m.employment || '';
+  document.getElementById('m-store').value      = m.store || '';
+  document.getElementById('m-role').value       = m.role || '';
+  document.getElementById('m-hire-date').value  = m.hire_date || '';
+  document.getElementById('m-memo').value       = m.memo || '';
+  // 퇴사일 필드 표시
+  const resignWrap = document.getElementById('m-resign-date-wrap');
+  resignWrap.style.display = '';
+  document.getElementById('m-resign-date').value = m.resign_date || '';
+  renderDynamicMemberFields(m);
+  document.getElementById('member-modal').classList.add('open');
+}
 
 // ── 퇴사 처리 ──
 async function resignMember(id) {
   const m = members.find(m => m.id === id);
   if (!m) return;
-  if (!confirm(`이 SE를 퇴사 처리하시겠습니까?\n\n퇴사 SE 탭에서 복직 처리가 가능합니다.\n\n대상: ${m.name} (${m.store||'매장 미입력'})`)) return;
+  if (!confirm(`이 SE를 퇴사 처리하시겠습니까?\n\n지난 SE 탭에서 복직 처리가 가능합니다.\n\n대상: ${m.name} (${m.store||'매장 미입력'})`)) return;
   if (!window.sb) return;
   try {
     const today = new Date().toISOString().slice(0,10);
     await sb.from('sidiz_members').update({ resigned: true, resign_date: today }).eq('id', id);
     await loadMembers();
     await loadResignedMembers();
-    alert(`${m.name} SE가 퇴사 처리되었습니다.\n퇴사 SE 탭에서 확인하세요.`);
+    alert(`${m.name} SE가 퇴사 처리되었습니다.\n지난 SE 탭에서 확인하세요.`);
   } catch(e) { alert('퇴사 처리 실패: ' + e.message); }
 }
 
@@ -5407,49 +5443,98 @@ async function loadResignedMembers() {
   } catch(e) { console.warn('퇴사 SE 로드 실패:', e.message); }
 }
 
-// ── 퇴사 SE 테이블 렌더 ──
+// ── 지난 SE 테이블 렌더 ──
+let resignedSortKey = 'resign_date';
+let resignedSortAsc = false;
+
+function calcResignedTenure(m) {
+  if (!m.hire_date || !m.resign_date) return '—';
+  const hire = new Date(m.hire_date);
+  const resign = new Date(m.resign_date);
+  let y = resign.getFullYear() - hire.getFullYear();
+  let mo = resign.getMonth() - hire.getMonth();
+  if (mo < 0) { y--; mo += 12; }
+  return y > 0 ? `${y}년 ${mo}개월` : `${mo}개월`;
+}
+
+function sortResigned(key) {
+  if (resignedSortKey === key) resignedSortAsc = !resignedSortAsc;
+  else { resignedSortKey = key; resignedSortAsc = true; }
+  renderResignedTable();
+}
+
 function renderResignedTable() {
   const thead = document.getElementById('resigned-thead');
   const tbody = document.getElementById('resigned-tbody');
   const sub = document.getElementById('resigned-count-sub');
   if (!thead || !tbody) return;
-  if (sub) sub.textContent = `퇴사 처리된 SE ${resignedMembers.length}명`;
 
+  // 검색 필터
+  const q = (document.getElementById('resigned-search')?.value || '').toLowerCase();
+  let filtered = resignedMembers.filter(m =>
+    !q || m.name?.toLowerCase().includes(q) || m.store?.toLowerCase().includes(q)
+  );
+
+  if (sub) sub.textContent = `전체 ${resignedMembers.length}명 / 표시 ${filtered.length}명`;
+
+  // 정렬
+  const arrow = k => k === resignedSortKey ? (resignedSortAsc ? ' ↑' : ' ↓') : ' ↕';
+  filtered.sort((a, b) => {
+    let av = a[resignedSortKey] || '', bv = b[resignedSortKey] || '';
+    return resignedSortAsc ? av.localeCompare(bv, 'ko') : bv.localeCompare(av, 'ko');
+  });
+
+  // 매장별 요약
+  const storeMap = {};
+  resignedMembers.forEach(m => {
+    const s = m.store || '미입력';
+    storeMap[s] = (storeMap[s] || 0) + 1;
+  });
+  const summaryEl = document.getElementById('resigned-store-summary');
+  if (summaryEl && Object.keys(storeMap).length) {
+    summaryEl.innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">매장별 현황</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${Object.entries(storeMap).sort((a,b)=>b[1]-a[1]).map(([store, cnt]) =>
+          `<div style="padding:5px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;font-size:12px;">
+            <span style="font-weight:600;color:var(--text);">${store}</span>
+            <span style="color:var(--accent3);font-weight:700;margin-left:6px;">${cnt}명</span>
+          </div>`
+        ).join('')}
+      </div>`;
+  }
+
+  // 헤더
   thead.innerHTML = `<tr>
-    <th>이름</th><th>매장</th><th>입사일</th><th>퇴사일</th><th>근무기간</th><th>메모</th><th>관리</th>
+    <th onclick="sortResigned('name')" style="cursor:pointer;white-space:nowrap;">이름${arrow('name')}</th>
+    <th onclick="sortResigned('store')" style="cursor:pointer;white-space:nowrap;">매장${arrow('store')}</th>
+    <th onclick="sortResigned('hire_date')" style="cursor:pointer;white-space:nowrap;">입사일${arrow('hire_date')}</th>
+    <th onclick="sortResigned('resign_date')" style="cursor:pointer;white-space:nowrap;">퇴사일${arrow('resign_date')}</th>
+    <th style="white-space:nowrap;">근무기간</th>
+    <th style="white-space:nowrap;">메모</th>
+    <th style="white-space:nowrap;">관리</th>
   </tr>`;
 
-  if (!resignedMembers.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px;">퇴사 처리된 SE가 없습니다.</td></tr>';
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px;">해당하는 SE가 없습니다.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = resignedMembers.map(m => {
-    // 입사~퇴사 기간 계산
-    let tenureText = '—';
-    if (m.hire_date && m.resign_date) {
-      const hire = new Date(m.hire_date);
-      const resign = new Date(m.resign_date);
-      let y = resign.getFullYear() - hire.getFullYear();
-      let mo = resign.getMonth() - hire.getMonth();
-      if (mo < 0) { y--; mo += 12; }
-      tenureText = y > 0 ? `${y}년 ${mo}개월` : `${mo}개월`;
-    }
-    return `<tr>
-      <td style="font-weight:600;">${m.name}</td>
-      <td style="color:var(--muted);">${m.store||'—'}</td>
-      <td style="color:var(--muted);font-size:12px;">${m.hire_date||'—'}</td>
-      <td style="color:var(--accent3);font-size:12px;">${m.resign_date||'—'}</td>
-      <td style="color:var(--muted);font-size:12px;">${tenureText}</td>
-      <td style="color:var(--muted);font-size:12px;">${m.memo||'—'}</td>
-      <td>
-        <div style="display:flex;gap:5px;align-items:center;">
-          <button class="btn btn-xs btn-outline" onclick="reinstateMember('${m.id}')" style="color:var(--accent2);border-color:rgba(96,196,240,.3);">복직</button>
-          <button class="btn-del-record" onclick="deleteMember('${m.id}')" title="완전 삭제">🗑</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
+  tbody.innerHTML = filtered.map(m => `<tr>
+    <td style="font-weight:600;">${m.name}</td>
+    <td style="color:var(--muted);">${m.store||'—'}</td>
+    <td style="color:var(--muted);font-size:12px;">${m.hire_date||'—'}</td>
+    <td style="color:var(--accent3);font-size:12px;">${m.resign_date||'—'}</td>
+    <td style="color:var(--muted);font-size:12px;">${calcResignedTenure(m)}</td>
+    <td style="color:var(--muted);font-size:12px;">${m.memo||'—'}</td>
+    <td>
+      <div style="display:flex;gap:5px;align-items:center;">
+        <button class="btn btn-xs btn-outline" onclick="openEditResignedMember('${m.id}')">편집</button>
+        <button class="btn btn-xs btn-outline" onclick="reinstateMember('${m.id}')" style="color:var(--accent2);border-color:rgba(96,196,240,.3);">복직</button>
+        <button class="btn-del-record" onclick="deleteMember('${m.id}')" title="완전 삭제">🗑</button>
+      </div>
+    </td>
+  </tr>`).join('');
 }
 
 // ── 복직 처리 ──
