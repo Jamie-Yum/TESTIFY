@@ -430,7 +430,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 .tb-logo span.survey{color:var(--accent2);}
 .tb-center{font-size:13px;color:var(--muted);}
 .tb-center strong{color:var(--text);}
-.timer{font-size:16px;font-weight:700;font-family:'DM Serif Display',serif;color:var(--accent);background:rgba(53,127,255,.08);padding:5px 14px;border-radius:var(--rs);letter-spacing:2px;transition:all .3s;}
+.timer{font-size:18px;font-weight:700;font-family:'DM Serif Display',serif;color:var(--accent);background:rgba(53,127,255,.12);padding:6px 16px;border-radius:var(--rs);letter-spacing:3px;transition:all .3s;border:1px solid rgba(53,127,255,.2);}
 .timer.warn{color:var(--accent3);background:rgba(240,96,144,.1);animation:pulse 1s infinite;}
 .timer.notime{opacity:0;pointer-events:none;}
 
@@ -741,7 +741,7 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
 
 /* ══ THEME TOGGLE ══ */
 .theme-toggle {
-  position: fixed; top: 14px; right: 16px; z-index: 200;
+  position: fixed; top: 70px; right: 16px; z-index: 200;
   background: var(--surface2); border: 1px solid var(--border);
   border-radius: 20px; padding: 5px 12px;
   cursor: pointer; font-size: 13px; color: var(--muted);
@@ -2281,6 +2281,9 @@ window.addEventListener('popstate', e => {
 
   // 타이머 정리
   if (view !== 'exam-view') { clearInterval(timerInterval); examStarted = false; }
+  // 시험 중 테마 버튼 숨김
+  const themeBtn = document.getElementById('theme-toggle-btn');
+  if (themeBtn) themeBtn.style.display = view === 'exam-view' ? 'none' : '';
 });
 
 // 최초 로드 시 초기 상태 설정
@@ -5129,6 +5132,9 @@ function renderMemberTable() {
         ">${v.label||k}</button>`).join('');
   }
 
+  // 현재 체크된 ID 저장
+  const prevCheckedIds = new Set([...document.querySelectorAll('.member-check:checked')].map(c => c.dataset.id));
+
   tbody.innerHTML = filtered.length
     ? filtered.map(m => {
         const tenureText = calcTenure(m.hire_date);
@@ -5143,7 +5149,7 @@ function renderMemberTable() {
           : '<span style="color:var(--dim);">—</span>';
         return `<tr>
           ${visibleCols.map(([k]) => {
-            if (k==='_check') return `<td><input type="checkbox" class="member-check" data-id="${m.id}" onchange="updateMemberSelectedCount()"/></td>`;
+            if (k==='_check') return `<td><input type="checkbox" class="member-check" data-id="${m.id}" ${prevCheckedIds.has(m.id)?'checked':''} onchange="updateMemberSelectedCount()"/></td>`;
             if (k==='tenure') return `<td>${tenureText}</td>`;
             if (k==='retro_count') return `<td style="cursor:pointer;" onclick="openRetroModal('${m.id}')" title="회고 현황 보기/편집">${retroText}</td>`;
             if (k==='seat1_score') {
@@ -5247,7 +5253,9 @@ function executeCopy() {
     if (c.key==='retro_count') return calcRetroCount(m) > 0 ? `${calcRetroCount(m)}개` : '—';
     if (c.key==='seat1_score') return seat1ScoreMap[m.name] !== undefined ? seat1ScoreMap[m.name] + '점' : '—';
     if (c.key==='seat1_score') return seat1ScoreMap[m.name] !== undefined ? seat1ScoreMap[m.name] + '점' : '—';
-    return m[c.key] ?? '—';
+    const val = m[c.key] ?? '—';
+    if (c.key === 'phone') return String(val).replace(/\//g, '');
+    return val;
   }).join('\t'));
 
   const text = includeHeader
