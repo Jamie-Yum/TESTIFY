@@ -1205,6 +1205,27 @@ textarea.fi{resize:vertical;min-height:72px;line-height:1.6;}
             <div class="fg"><label class="fl">시간 제한 (분, 0=무제한)</label><input class="fi" id="f-time" type="number" value="30" /></div>
           </div>
           <div class="fg"><label class="fl">안내 문구</label><textarea class="fi" id="f-desc" placeholder="응시자에게 보여줄 안내 문구"></textarea></div>
+
+          <!-- 인트로 첨부 자료 -->
+          <div class="fg">
+            <label class="fl">인트로 첨부 자료 <span style="font-weight:400;color:var(--dim);text-transform:none;letter-spacing:0;">(선택 — 시작 화면에 표시)</span></label>
+            <div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;">
+              <div style="display:flex;gap:8px;margin-bottom:12px;">
+                <button id="intro-tab-btn-upload" onclick="setIntroFileTab('upload')" style="flex:1;padding:7px;border-radius:var(--rs);border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:12px;cursor:pointer;font-weight:600;">📁 파일 업로드</button>
+                <button id="intro-tab-btn-url" onclick="setIntroFileTab('url')" style="flex:1;padding:7px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;">🔗 외부 URL</button>
+              </div>
+              <div id="intro-upload-area">
+                <input type="file" id="intro-file-input" accept="image/*,.pdf" style="display:none;" onchange="onIntroFileUpload(this)">
+                <button onclick="document.getElementById('intro-file-input').click()" style="width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:var(--rs);background:var(--surface2);color:var(--muted);font-size:13px;cursor:pointer;">＋ 파일 선택 (이미지, PDF)</button>
+              </div>
+              <div id="intro-url-area" style="display:none;">
+                <input class="fi" id="f-intro-url-visible" placeholder="https://drive.google.com/... 또는 이미지 URL" style="margin:0;" oninput="onIntroUrlInput(this.value)">
+              </div>
+              <div id="intro-file-preview" style="margin-top:10px;"></div>
+              <input type="hidden" id="f-intro-file-url">
+              <input type="hidden" id="f-intro-file-name">
+            </div>
+          </div>
           <div class="fg"><label class="fl">랜덤 출제 문항 수 (0=전체)</label><input class="fi" id="f-random" type="number" value="0" /></div>
 
           <!-- 공개 일정 -->
@@ -1719,6 +1740,7 @@ document.querySelector('.main').insertAdjacentHTML('beforeend', `
     <span class="mode-tag" id="intro-mode-tag">📝 시험 모드</span>
     <div class="intro-title" id="intro-title">2월 제품 교육 평가</div>
     <div class="intro-desc" id="intro-desc">본 시험은 2월 제품 교육 내용을 바탕으로 구성되었습니다.</div>
+    <div id="intro-attachment" style="margin-bottom:16px;"></div>
     <div class="intro-meta">
       <div><div class="im-label">총 문항</div><div class="im-val" id="im-count">4문항</div></div>
       <div><div class="im-label">시간 제한</div><div class="im-val accent" id="im-time">30분</div></div>
@@ -2754,6 +2776,12 @@ function loadEditorFields(item) {
   document.getElementById('tgl-qshuffle').className= 'tgl' + (item.shuffleQ?' on':'');
   document.getElementById('f-roster').value = (item.roster || []).join('\n');
   document.getElementById('f-thank-msg').value = item.thankMsg || '';
+  // 인트로 첨부파일
+  document.getElementById('f-intro-file-url').value = item.introFileUrl || '';
+  document.getElementById('f-intro-file-name').value = item.introFileName || '';
+  const visibleUrlInput = document.getElementById('f-intro-url-visible');
+  if (visibleUrlInput) visibleUrlInput.value = item.introFileUrl || '';
+  renderIntroFilePreview(item.introFileUrl || '', item.introFileName || '');
   setEditorMode(item.mode);
   renderQList(item.questions, item.mode);
   updateSharePanel(item);
@@ -2804,6 +2832,8 @@ function collectItemFields(item) {
   item.lockedMsg = document.getElementById('f-locked-msg').value.trim();
   item.roster    = document.getElementById('f-roster').value.split('\n').map(s=>s.trim()).filter(Boolean);
   item.thankMsg  = document.getElementById('f-thank-msg').value.trim();
+  item.introFileUrl  = document.getElementById('f-intro-file-url')?.value || '';
+  item.introFileName = document.getElementById('f-intro-file-name')?.value || '';
 }
 
 function persistItem(item) {
@@ -3125,7 +3155,26 @@ function qItemHTML(q, i, mode) {
       ${mode==='exam'?`<span class="q-score-tag">${q.score||10}점</span>`:''}
       <span class="q-chevron">▾</span>
     </div>
-    <div class="q-body">${body}</div>
+    <div class="q-body">
+      ${body}
+      <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:10px;">📎 문항 첨부 자료 <span style="font-weight:400;text-transform:none;letter-spacing:0;">(선택)</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button id="qtab-upload-${q.id}" onclick="setQFileTab('${q.id}','upload')" style="padding:5px 12px;border-radius:var(--rs);border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:11px;cursor:pointer;font-weight:600;">📁 업로드</button>
+          <button id="qtab-url-${q.id}" onclick="setQFileTab('${q.id}','url')" style="padding:5px 12px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;cursor:pointer;">🔗 URL</button>
+        </div>
+        <div id="qupload-area-${q.id}">
+          <input type="file" id="qfile-input-${q.id}" accept="image/*,.pdf" style="display:none;" onchange="onQFileUpload('${q.id}',this)">
+          <button onclick="document.getElementById('qfile-input-${q.id}').click()" style="width:100%;padding:8px;border:1.5px dashed var(--border);border-radius:var(--rs);background:var(--surface2);color:var(--muted);font-size:12px;cursor:pointer;">＋ 파일 선택 (이미지, PDF)</button>
+        </div>
+        <div id="qurl-area-${q.id}" style="display:none;">
+          <input class="fi" placeholder="https://... 이미지 또는 외부 링크" style="margin:0;" oninput="onQUrlInput('${q.id}',this.value)" value="${q.attachmentUrl||''}">
+        </div>
+        <div id="qfile-preview-${q.id}" style="margin-top:8px;">${q.attachmentUrl ? renderAttachmentPreviewHTML(q.attachmentUrl, q.attachmentName||'') : ''}</div>
+        <input type="hidden" id="qfile-url-${q.id}" value="${q.attachmentUrl||''}">
+        <input type="hidden" id="qfile-name-${q.id}" value="${q.attachmentName||''}">
+      </div>
+    </div>
   </div>`;
 }
 
@@ -3729,6 +3778,168 @@ async function saveAwardSeatGift() {
   await loadAwards();
 }
 
+
+// ══════════════════════════════════════
+// 첨부파일 관련 함수
+// ══════════════════════════════════════
+
+// 첨부파일 미리보기 HTML (응시자 화면용)
+function renderAttachmentHTML(url, name) {
+  const isImage = /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(url);
+  const isPdf   = /\.pdf(\?|$)/i.test(url) || url.includes('application/pdf');
+  if (isImage) {
+    return `<div style="margin:0 0 16px;border-radius:var(--rs);overflow:hidden;border:1px solid var(--border);">
+      <img src="${url}" alt="${name||'첨부 이미지'}" style="width:100%;display:block;max-height:400px;object-fit:contain;background:var(--surface2);">
+    </div>`;
+  } else if (isPdf) {
+    return `<div style="margin:0 0 16px;">
+      <iframe src="${url}" style="width:100%;height:420px;border:1px solid var(--border);border-radius:var(--rs);" title="${name||'첨부 PDF'}"></iframe>
+      <a href="${url}" target="_blank" style="display:block;font-size:12px;color:var(--accent);margin-top:4px;">🔗 새 탭에서 열기</a>
+    </div>`;
+  } else {
+    return `<div style="margin:0 0 16px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--rs);display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;">📎</span>
+      <a href="${url}" target="_blank" style="color:var(--accent);font-size:13px;text-decoration:none;">${name||url}</a>
+    </div>`;
+  }
+}
+
+// 에디터 내 미리보기 HTML (작은 버전 + 삭제 버튼)
+function renderAttachmentPreviewHTML(url, name) {
+  if (!url) return '';
+  const isImage = /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(url);
+  const isPdf   = /\.pdf(\?|$)/i.test(url);
+  const icon = isImage ? '🖼️' : isPdf ? '📄' : '🔗';
+  const label = name || url.split('/').pop().split('?')[0] || url;
+  return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-radius:var(--rs);font-size:12px;">
+    <span>${icon}</span>
+    <a href="${url}" target="_blank" style="color:var(--accent);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label}</a>
+    <button onclick="clearIntroFile()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;">×</button>
+  </div>`;
+}
+
+function renderQFilePreviewHTML(qId, url, name) {
+  if (!url) return '';
+  const isImage = /\.(png|jpe?g|gif|webp|svg)(\?|$)/i.test(url);
+  const isPdf   = /\.pdf(\?|$)/i.test(url);
+  const icon = isImage ? '🖼️' : isPdf ? '📄' : '🔗';
+  const label = name || url.split('/').pop().split('?')[0] || url;
+  return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-radius:var(--rs);font-size:12px;">
+    <span>${icon}</span>
+    <a href="${url}" target="_blank" style="color:var(--accent);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label}</a>
+    <button onclick="clearQFile('${qId}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;">×</button>
+  </div>`;
+}
+
+// 인트로 탭 전환
+function setIntroFileTab(tab) {
+  document.getElementById('intro-upload-area').style.display = tab==='upload' ? '' : 'none';
+  document.getElementById('intro-url-area').style.display    = tab==='url'    ? '' : 'none';
+  document.getElementById('intro-tab-btn-upload').style.cssText = tab==='upload'
+    ? 'flex:1;padding:7px;border-radius:var(--rs);border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:12px;cursor:pointer;font-weight:600;'
+    : 'flex:1;padding:7px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;';
+  document.getElementById('intro-tab-btn-url').style.cssText = tab==='url'
+    ? 'flex:1;padding:7px;border-radius:var(--rs);border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:12px;cursor:pointer;font-weight:600;'
+    : 'flex:1;padding:7px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;';
+}
+
+// 인트로 파일 업로드
+async function onIntroFileUpload(input) {
+  const file = input.files[0]; if (!file) return;
+  if (!window.sb) { alert('Supabase 미연결'); return; }
+  const btn = input.previousElementSibling;
+  if (btn) btn.textContent = '업로드 중...';
+  const ext  = file.name.split('.').pop();
+  const path = `intro/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await sb.storage.from('sitforest-files').upload(path, file, { upsert: true });
+  if (error) { alert('업로드 실패: ' + error.message); if (btn) btn.textContent = '＋ 파일 선택 (이미지, PDF)'; return; }
+  const { data } = sb.storage.from('sitforest-files').getPublicUrl(path);
+  setIntroFile(data.publicUrl, file.name);
+  if (btn) btn.textContent = '＋ 파일 선택 (이미지, PDF)';
+}
+
+// 인트로 URL 직접 입력
+function onIntroUrlInput(val) {
+  setIntroFile(val.trim(), '');
+}
+
+function setIntroFile(url, name) {
+  document.getElementById('f-intro-file-url').value  = url;
+  document.getElementById('f-intro-file-name').value = name;
+  renderIntroFilePreview(url, name);
+  // 즉시 저장
+  const item = getCurrent(); if (!item) return;
+  item.introFileUrl  = url;
+  item.introFileName = name;
+  persistItem(item);
+}
+
+function renderIntroFilePreview(url, name) {
+  const el = document.getElementById('intro-file-preview');
+  if (!el) return;
+  el.innerHTML = url ? renderAttachmentPreviewHTML(url, name) : '';
+}
+
+function clearIntroFile() {
+  setIntroFile('', '');
+  const vi = document.getElementById('f-intro-url-visible');
+  if (vi) vi.value = '';
+  const fi = document.getElementById('intro-file-input');
+  if (fi) fi.value = '';
+}
+
+// 문항 탭 전환
+function setQFileTab(qId, tab) {
+  document.getElementById(`qupload-area-${qId}`).style.display = tab==='upload' ? '' : 'none';
+  document.getElementById(`qurl-area-${qId}`).style.display    = tab==='url'    ? '' : 'none';
+  const ub = document.getElementById(`qtab-upload-${qId}`);
+  const lb = document.getElementById(`qtab-url-${qId}`);
+  if (ub) ub.style.cssText = tab==='upload'
+    ? 'padding:5px 12px;border-radius:var(--rs);border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:11px;cursor:pointer;font-weight:600;'
+    : 'padding:5px 12px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;cursor:pointer;';
+  if (lb) lb.style.cssText = tab==='url'
+    ? 'padding:5px 12px;border-radius:var(--rs);border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:11px;cursor:pointer;font-weight:600;'
+    : 'padding:5px 12px;border-radius:var(--rs);border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;cursor:pointer;';
+}
+
+// 문항 파일 업로드
+async function onQFileUpload(qId, input) {
+  const file = input.files[0]; if (!file) return;
+  if (!window.sb) { alert('Supabase 미연결'); return; }
+  const btn = input.previousElementSibling;
+  if (btn) btn.textContent = '업로드 중...';
+  const ext  = file.name.split('.').pop();
+  const path = `questions/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await sb.storage.from('sitforest-files').upload(path, file, { upsert: true });
+  if (error) { alert('업로드 실패: ' + error.message); if (btn) btn.textContent = '＋ 파일 선택 (이미지, PDF)'; return; }
+  const { data } = sb.storage.from('sitforest-files').getPublicUrl(path);
+  setQFile(qId, data.publicUrl, file.name);
+  if (btn) btn.textContent = '＋ 파일 선택 (이미지, PDF)';
+}
+
+// 문항 URL 직접 입력
+function onQUrlInput(qId, val) {
+  setQFile(qId, val.trim(), '');
+}
+
+function setQFile(qId, url, name) {
+  document.getElementById(`qfile-url-${qId}`).value  = url;
+  document.getElementById(`qfile-name-${qId}`).value = name;
+  const preview = document.getElementById(`qfile-preview-${qId}`);
+  if (preview) preview.innerHTML = url ? renderQFilePreviewHTML(qId, url, name) : '';
+  // 메모리 업데이트
+  const item = getCurrent(); if (!item) return;
+  const q = item.questions.find(q => String(q.id) === String(qId));
+  if (q) { q.attachmentUrl = url; q.attachmentName = name; persistItem(item); }
+}
+
+function clearQFile(qId) {
+  setQFile(qId, '', '');
+  const inp = document.querySelector(`#qurl-area-${qId} input`);
+  if (inp) inp.value = '';
+  const fi = document.getElementById(`qfile-input-${qId}`);
+  if (fi) fi.value = '';
+}
 
 // ══ 결과 탭 전환 ══
 document.querySelectorAll('.etab[data-rtab]').forEach(el => {
@@ -4662,6 +4873,8 @@ function loadIntro(item) {
 
   document.getElementById('intro-title').textContent = item.title;
   document.getElementById('intro-desc').textContent  = item.desc || '안내 문구가 없습니다.';
+  const introAtt = document.getElementById('intro-attachment');
+  if (introAtt) introAtt.innerHTML = item.introFileUrl ? renderAttachmentHTML(item.introFileUrl, item.introFileName||'') : '';
   document.getElementById('im-count').textContent    = item.questions.length + '문항';
   document.getElementById('im-time').textContent     = item.time ? item.time+'분' : '제한 없음';
   document.getElementById('im-time').className       = 'im-val' + (isSurvey?' blue':' accent');
@@ -5026,6 +5239,7 @@ function renderQ() {
       </div>
       <div class="q-text">${q.text}</div>
       ${q.desc ? `<div style="margin:0 0 16px;padding:10px 14px;background:var(--surface2);border-left:3px solid var(--accent2);border-radius:0 var(--rs) var(--rs) 0;font-size:13px;color:var(--muted);line-height:1.6;">${q.desc}</div>` : ''}
+      ${q.attachmentUrl ? renderAttachmentHTML(q.attachmentUrl, q.attachmentName||'') : ''}
       ${inputHTML}
       <div class="opt-card-nav">
         ${prevBtn}
@@ -7072,6 +7286,8 @@ async function loadExamsFromDB() {
       openAt:   e.open_at || '',
       closeAt:  e.close_at || '',
       lockedMsg: e.locked_msg || '',
+      introFileUrl:  e.intro_file_url || '',
+      introFileName: e.intro_file_name || '',
       questions: questionsData
         .filter(q => q.exam_id === e.id)
         .sort((a, b) => a.sort_order - b.sort_order)
@@ -7090,6 +7306,8 @@ async function loadExamsFromDB() {
           linearMin: q.linear_min ?? undefined,
           linearMax: q.linear_max ?? undefined,
           starMax: q.star_max || undefined,
+          attachmentUrl:  q.attachment_url || '',
+          attachmentName: q.attachment_name || '',
         }))
     }));
 
@@ -7170,6 +7388,8 @@ async function saveItemToDB(item) {
       open_at:   item.openAt || null,
       close_at:  item.closeAt || null,
       locked_msg: item.lockedMsg || null,
+      intro_file_url:  item.introFileUrl || null,
+      intro_file_name: item.introFileName || null,
     });
 
     // 기존 문항 삭제 후 재저장
@@ -7192,6 +7412,8 @@ async function saveItemToDB(item) {
         linear_min: q.linearMin ?? null,
         linear_max: q.linearMax ?? null,
         star_max: q.starMax || null,
+        attachment_url:  q.attachmentUrl || null,
+        attachment_name: q.attachmentName || null,
       });
     }
     console.log('✅ 시험 저장 완료:', item.title);
