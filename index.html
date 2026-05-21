@@ -8,7 +8,7 @@
 <meta property="og:title" content="SIT FOREST — 시디즈 사내 시험 플랫폼">
 <meta property="og:description" content="SE들이 함께 자라는 숲, 시디즈 전용 시험·설문 플랫폼">
 <meta property="og:type" content="website">
-<meta property="og:image" content="https://jamie-yum.github.io/sitforest/og-image.png">
+<meta property="og:image" content="https://sidiz-edu.github.io/sitforest/og-image.png">
 <meta name="theme-color" content="#1B4332">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27><rect width=%2764%27 height=%2764%27 rx=%2732%27 fill=%27%231B4332%27/><rect x=%274%27 y=%2734%27 width=%273%27 height=%2718%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%275%27 cy=%2730%27 r=%277%27 fill=%27%2340916C%27/><rect x=%2755%27 y=%2736%27 width=%273%27 height=%2716%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%2756%27 cy=%2732%27 r=%276%27 fill=%27%2352B788%27/><rect x=%2747%27 y=%2738%27 width=%273%27 height=%2714%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%2748%27 cy=%2734%27 r=%275%27 fill=%27%2340916C%27/><rect x=%2719%27 y=%2742%27 width=%2724%27 height=%274%27 rx=%272%27 fill=%27%2374C69D%27/><rect x=%2735%27 y=%2730%27 width=%273%27 height=%2714%27 rx=%271.5%27 fill=%27%2374C69D%27/><rect x=%2719%27 y=%2746%27 width=%273%27 height=%279%27 rx=%271.5%27 fill=%27%2352B788%27/><rect x=%2737%27 y=%2746%27 width=%273%27 height=%279%27 rx=%271.5%27 fill=%27%2352B788%27/><circle cx=%2728%27 cy=%2727%27 r=%275%27 fill=%27white%27/><rect x=%2722%27 y=%2732%27 width=%2712%27 height=%2710%27 rx=%273%27 fill=%27white%27/><rect x=%2722%27 y=%2742%27 width=%274%27 height=%278%27 rx=%272%27 fill=%27rgba(255,255,255,0.7)%27/><rect x=%2729%27 y=%2742%27 width=%274%27 height=%278%27 rx=%272%27 fill=%27rgba(255,255,255,0.7)%27/></svg>">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27><rect width=%2764%27 height=%2764%27 rx=%2732%27 fill=%27%231B4332%27/><rect x=%274%27 y=%2734%27 width=%273%27 height=%2718%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%275%27 cy=%2730%27 r=%277%27 fill=%27%2340916C%27/><rect x=%2755%27 y=%2736%27 width=%273%27 height=%2716%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%2756%27 cy=%2732%27 r=%276%27 fill=%27%2352B788%27/><rect x=%2747%27 y=%2738%27 width=%273%27 height=%2714%27 rx=%271%27 fill=%27%23795548%27/><circle cx=%2748%27 cy=%2734%27 r=%275%27 fill=%27%2340916C%27/><rect x=%2719%27 y=%2742%27 width=%2724%27 height=%274%27 rx=%272%27 fill=%27%2374C69D%27/><rect x=%2735%27 y=%2730%27 width=%273%27 height=%2714%27 rx=%271.5%27 fill=%27%2374C69D%27/><rect x=%2719%27 y=%2746%27 width=%273%27 height=%279%27 rx=%271.5%27 fill=%27%2352B788%27/><rect x=%2737%27 y=%2746%27 width=%273%27 height=%279%27 rx=%271.5%27 fill=%27%2352B788%27/><circle cx=%2728%27 cy=%2727%27 r=%275%27 fill=%27white%27/><rect x=%2722%27 y=%2732%27 width=%2712%27 height=%2710%27 rx=%273%27 fill=%27white%27/><rect x=%2722%27 y=%2742%27 width=%274%27 height=%278%27 rx=%272%27 fill=%27rgba(255,255,255,0.7)%27/><rect x=%2729%27 y=%2742%27 width=%274%27 height=%278%27 rx=%272%27 fill=%27rgba(255,255,255,0.7)%27/></svg>">
@@ -2827,7 +2827,7 @@ function deployItem() {
   const item = getCurrent(); if (!item) return;
   collectItemFields(item);
   persistItem(item);
-  const base = 'https://jamie-yum.github.io/sitforest/';
+  const base = 'https://sidiz-edu.github.io/sitforest/';
   document.getElementById('deploy-url-exam').textContent  = `${base}?test=${item.id}`;
   document.getElementById('deploy-url-admin').textContent = `${base}?admin=${item.id}`;
   document.getElementById('deploy-modal-sub').textContent =
@@ -2898,7 +2898,7 @@ function copyShareUrl(type) { copyDeployUrl(type); }
 
 function showQR(type) {
   const url = document.getElementById(`deploy-url-${type}`)?.textContent
-    || (() => { const base='https://jamie-yum.github.io/sitforest/'; const item=getCurrent(); return type==='exam'?`${base}?test=${item?.id}`:`${base}?admin=${item?.id}`; })();
+    || (() => { const base='https://sidiz-edu.github.io/sitforest/'; const item=getCurrent(); return type==='exam'?`${base}?test=${item?.id}`:`${base}?admin=${item?.id}`; })();
   const title = type === 'exam' ? '응시자 링크 QR' : '관리자 링크 QR';
   document.getElementById('qr-modal-title').textContent = title;
   document.getElementById('qr-url-text').textContent = url;
@@ -7484,7 +7484,7 @@ function showLockedScreen(msg) {
 function openShare(id){
   const item = items.find(i => i.id === id);
   if (!item) return;
-  const base = 'https://jamie-yum.github.io/sitforest/';
+  const base = 'https://sidiz-edu.github.io/sitforest/';
   document.getElementById('deploy-url-exam').textContent  = `${base}?test=${item.id}`;
   document.getElementById('deploy-url-admin').textContent = `${base}?admin=${item.id}`;
   document.getElementById('deploy-modal-sub').textContent = `"${item.title}" 링크를 공유하거나 QR 코드를 사용하세요.`;
